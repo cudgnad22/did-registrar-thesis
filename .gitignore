@@ -35,3 +35,6 @@ keyring-*/
 # bản sao lưu cơ sở dữ liệu
 *.dump
 *.sql.gz
+
+# kết quả chạy thử
+*e2e-output*.json
