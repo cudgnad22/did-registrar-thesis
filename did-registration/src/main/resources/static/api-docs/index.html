@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DID Registrar · Tài liệu API</title>
+  <link rel="icon" type="image/png" href="favicon-32x32.png">
+  <!-- Swagger UI 5.20.1 (Apache License 2.0), đặt cùng ứng dụng để chạy không cần Internet -->
+  <link rel="stylesheet" href="swagger-ui/swagger-ui.css">
+  <style>
+    body { margin: 0; background: #fafafa; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    .app-nav { background: #212529; color: #fff; }
+    .app-nav .wrap { max-width: 1460px; margin: 0 auto; padding: 0 20px; display: flex; align-items: center;
+                     gap: 24px; height: 56px; }
+    .app-nav .brand { font-size: 20px; font-weight: 600; color: #fff; text-decoration: none; }
+    .app-nav .sub { color: rgba(255,255,255,.6); font-size: 14px; }
+    .app-nav nav { margin-left: auto; display: flex; gap: 4px; }
+    .app-nav nav a { color: rgba(255,255,255,.75); text-decoration: none; padding: 8px 12px; border-radius: 6px; font-size: 15px; }
+    .app-nav nav a:hover { color: #fff; background: rgba(255,255,255,.08); }
+    .app-nav nav a.active { color: #fff; background: rgba(255,255,255,.15); }
+    .swagger-ui .topbar { display: none; }
+    #load-error { display: none; max-width: 900px; margin: 40px auto; padding: 16px 20px; border: 1px solid #f5c2c7;
+                  background: #f8d7da; color: #842029; border-radius: 8px; }
+  </style>
+</head>
+<body>
+<header class="app-nav">
+  <div class="wrap">
+    <a class="brand" href="/ui/create">DID Registrar</a>
+    <span class="sub">did:cheqd · Client-managed Secret</span>
+    <nav>
+      <a href="/ui/create">Giao diện</a>
+      <a href="/api-docs/index.html" class="active">Tài liệu API</a>
+    </nav>
+  </div>
+</header>
+
+<div id="load-error">Không tải được Swagger UI. Kiểm tra thư mục <code>static/api-docs/swagger-ui/</code> đã có
+  <code>swagger-ui-bundle.js</code>, <code>swagger-ui-standalone-preset.js</code> và <code>swagger-ui.css</code>.</div>
+<div id="swagger-ui"></div>
+
+<script src="swagger-ui/swagger-ui-bundle.js"></script>
+<script src="swagger-ui/swagger-ui-standalone-preset.js"></script>
+<script>
+  window.addEventListener('load', function () {
+    if (typeof SwaggerUIBundle === 'undefined') {
+      document.getElementById('load-error').style.display = 'block';
+      return;
+    }
+    window.ui = SwaggerUIBundle({
+      url: 'openapi.json',
+      dom_id: '#swagger-ui',
+      deepLinking: true,
+      presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
+      layout: 'StandaloneLayout',
+      docExpansion: 'list',
+      defaultModelsExpandDepth: 0,
+      displayRequestDuration: true,
+      tryItOutEnabled: false
+    });
+  });
+</script>
+</body>
+</html>

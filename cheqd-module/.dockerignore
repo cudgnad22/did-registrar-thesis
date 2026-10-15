@@ -1,0 +1,5 @@
+node_modules
+.env
+*.json.bak
+e2e-output.json
+test

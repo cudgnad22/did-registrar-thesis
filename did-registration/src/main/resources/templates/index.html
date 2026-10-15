@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DID Registrar</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+<nav class="navbar navbar-dark bg-dark">
+  <div class="container">
+    <span class="navbar-brand">DID Registrar</span>
+    <span class="navbar-text me-auto">did:cheqd · Client-managed Secret</span>
+    <div class="navbar-nav flex-row gap-3">
+      <a class="nav-link" href="/ui/create">Giao diện</a>
+      <a class="nav-link active" href="/dids">Danh sách DID</a>
+      <a class="nav-link" href="/api-docs/index.html">Tài liệu API</a>
+    </div>
+  </div>
+</nav>
+
+<div class="container my-4">
+  <h4>Quản lý định danh phi tập trung</h4>
+  <p class="text-muted">Tạo, thay khóa và vô hiệu hóa DID theo đặc tả DIF DID Registration.
+    Khóa bí mật chỉ nằm ở phía Client; ứng dụng chỉ nhận khóa công khai và chữ ký.</p>
+
+  <div class="alert alert-info">
+    <div><code>POST /1.0/create?method=cheqd</code> tạo DID</div>
+    <div><code>POST /1.0/update</code> cập nhật (thay khóa)</div>
+    <div><code>POST /1.0/deactivate</code> vô hiệu hóa DID</div>
+    <div class="small mt-1">Mỗi thao tác gọi hai lần cùng điểm cuối: lần đầu nhận yêu cầu ký và <code>jobId</code>,
+      lần sau gửi <code>jobId</code> kèm <code>secret.signingResponse</code>.</div>
+    <div class="small mt-1">Xem đặc tả và gọi thử ở <a href="/api-docs/index.html">Tài liệu API</a>;
+      thực hiện ba thao tác ở trang <a href="/ui/create">Giao diện</a>, việc ký do bộ ký phía Client (did-cli agent) đảm nhận.</div>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-header">Danh sách DID</div>
+    <div class="card-body">
+      <div th:if="${#lists.isEmpty(dids)}" class="text-muted">Chưa có DID nào.</div>
+      <table th:unless="${#lists.isEmpty(dids)}" class="table table-hover table-bordered align-middle mb-0">
+        <thead class="table-light">
+        <tr><th>#</th><th>Nhãn</th><th>DID</th><th>Trạng thái</th><th>Tạo lúc</th></tr>
+        </thead>
+        <tbody>
+        <tr th:each="did, stat : ${dids}">
+          <td th:text="${stat.count}">1</td>
+          <td th:text="${did.label ?: '—'}">—</td>
+          <td><code th:text="${did.didString}">did:cheqd:testnet:...</code></td>
+          <td><span class="badge" th:classappend="${did.status.name() == 'ACTIVE'} ? 'bg-success' : 'bg-danger'"
+                    th:text="${did.status}">ACTIVE</span></td>
+          <td th:text="${#temporals.format(did.createdAt, 'dd/MM/yyyy HH:mm')}">01/01/2026 00:00</td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+</body>
+</html>

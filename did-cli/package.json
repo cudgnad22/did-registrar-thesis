@@ -1,0 +1,14 @@
+{
+  "name": "did-cli",
+  "version": "2.0.0",
+  "description": "Bo ky phia Client cho ung dung DID Registrar (Client-managed Secret): giu khoa, doi chieu, xac nhan, ky",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "cli": "node --import tsx src/cli.ts",
+    "agent": "node --import tsx src/cli.ts agent"
+  },
+  "dependencies": {
+    "tsx": "^4.19.2"
+  }
+}

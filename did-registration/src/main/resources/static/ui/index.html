@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DID Registrar · Giao diện</title>
+  <link rel="icon" type="image/png" href="/api-docs/favicon-32x32.png">
+  <style>
+    /* Bố cục tham khảo giao diện Universal Registrar (universal-registrar-frontend, DIF):
+       thanh chọn thao tác, hàng nút thực thi + JOB ID, các ô OPTIONS / SECRET / DID DOCUMENT, các tab kết quả. */
+    :root {
+      --bg: #f4f5f7; --seg: #fff; --line: #dcdfe4; --text: #1f2933; --muted: #6b7280;
+      --primary: #2185d0; --primary-d: #1678c2; --dark: #1b1c1d; --danger: #db2828;
+      --ok: #21ba45; --ok-bg: #e9f8ee; --bad-bg: #fdecec; --warn: #f2c037; --warn-bg: #fff8e1; --info-bg: #e8f2fc;
+      --code: #2b2f36; --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+    a { color: var(--primary); }
+    code { font-family: var(--mono); font-size: 12.5px; background: rgba(0,0,0,.05); padding: 1px 5px; border-radius: 3px; }
+    .hidden { display: none !important; }
+
+    .app-nav { background: #212529; color: #fff; }
+    .app-nav .wrap { max-width: 1400px; margin: 0 auto; padding: 0 16px; display: flex; align-items: center; gap: 20px; height: 52px; }
+    .app-nav .brand { font-size: 19px; font-weight: 600; color: #fff; text-decoration: none; }
+    .app-nav .sub { color: rgba(255,255,255,.6); font-size: 13px; }
+    .app-nav nav { margin-left: auto; display: flex; gap: 4px; }
+    .app-nav nav a { color: rgba(255,255,255,.75); text-decoration: none; padding: 7px 12px; border-radius: 5px; }
+    .app-nav nav a:hover { color: #fff; background: rgba(255,255,255,.08); }
+    .app-nav nav a.active { color: #fff; background: rgba(255,255,255,.15); }
+
+    .page { max-width: 1400px; margin: 0 auto; padding: 16px 16px 48px; }
+    .seg { background: var(--seg); border: 1px solid var(--line); border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,.06); margin-bottom: 14px; }
+    .seg.pad { padding: 16px 18px; }
+
+    /* Thanh chọn thao tác (tương tự hàng tab phương thức của Universal Registrar) */
+    .optabs { display: flex; align-items: stretch; flex-wrap: wrap; }
+    .optabs a { padding: 10px 16px; text-decoration: none; color: var(--text); border-right: 1px solid var(--line); font-size: 13.5px; }
+    .optabs a:hover { background: #f7f8fa; }
+    .optabs a.active { background: #e8e9ec; font-weight: 600; }
+    .optabs a small { color: var(--muted); font-family: var(--mono); margin-left: 4px; }
+    .optabs .method { margin-left: auto; padding: 10px 16px; font-size: 13px; color: var(--muted); border-left: 1px solid var(--line); }
+    .optabs .method b { color: var(--text); font-family: var(--mono); }
+
+    .head { display: flex; flex-wrap: wrap; gap: 14px 30px; align-items: center; }
+    .head h1 { font-size: 20px; margin: 0; }
+    .head p { margin: 2px 0 0; color: var(--muted); font-size: 13px; max-width: 640px; }
+    .signer { margin-left: auto; display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
+    .signer label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--muted); margin-bottom: 3px; }
+    .signer input, .signer select { font: inherit; font-size: 13px; padding: 6px 9px; border: 1px solid var(--line); border-radius: 4px; background: #fff; }
+    .signer input { width: 180px; }
+    .agent-status { display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600; padding-bottom: 6px; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; background: #bbb; display: inline-block; }
+    .dot.ok { background: var(--ok); } .dot.bad { background: var(--danger); }
+
+    .btn { font: inherit; font-size: 13px; font-weight: 700; border: 0; border-radius: 4px; padding: 8px 16px; cursor: pointer; background: #e0e1e2; color: rgba(0,0,0,.65); }
+    .btn:hover { filter: brightness(.95); }
+    .btn:disabled { opacity: .45; cursor: not-allowed; filter: none; }
+    .btn.primary { background: var(--primary); color: #fff; } .btn.primary:hover { background: var(--primary-d); }
+    .btn.dark { background: var(--dark); color: #fff; }
+    .btn.danger { background: var(--danger); color: #fff; }
+    .btn.basic { background: #fff; border: 1px solid var(--line); color: var(--text); font-weight: 600; }
+    .btn.sm { padding: 5px 10px; font-size: 12px; }
+
+    /* Khối thao tác */
+    .op .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 14px 18px; border-bottom: 1px solid var(--line); }
+    .op .bar .sep { width: 1px; align-self: stretch; background: var(--line); margin: 0 10px; }
+    .op .bar label { font-size: 11px; font-weight: 700; text-transform: uppercase; }
+    .op .bar input { font: 12.5px var(--mono); width: 330px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 4px; }
+    .op .bar .spec { margin-left: auto; font-size: 12.5px; }
+    .grp { padding: 14px 18px; border-bottom: 1px solid var(--line); }
+    .grp h4 { margin: 0 0 10px; font-size: 13px; text-transform: uppercase; letter-spacing: .02em; display: flex; align-items: center; gap: 10px; }
+    .grp h4 .hint { text-transform: none; letter-spacing: 0; font-weight: 400; color: var(--muted); font-size: 12px; }
+    .grp h4 .right { margin-left: auto; display: flex; gap: 8px; }
+    .fields { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px 14px; }
+    .fields.two { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+    .f label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--muted); margin-bottom: 3px; }
+    .f input, .f select { font: inherit; width: 100%; padding: 7px 9px; border: 1px solid var(--line); border-radius: 4px; background: #fff; }
+    .f select { font-family: var(--mono); font-size: 12.5px; }
+    textarea { font: 12px/1.45 var(--mono); width: 100%; min-height: 110px; padding: 8px 10px; border: 1px solid #c8ccd2; border-radius: 4px; resize: vertical; background: #fff; }
+    textarea.doc { min-height: 220px; }
+    textarea[readonly] { background: #f7f8fa; color: #444; }
+    .pdesc { font-size: 12px; color: var(--muted); margin-top: 4px; }
+    .note { padding: 8px 12px; border-radius: 4px; margin: 8px 0 0; font-size: 13px; }
+    .note.info { background: var(--info-bg); border-left: 4px solid var(--primary); }
+    .note.ok { background: var(--ok-bg); border-left: 4px solid var(--ok); }
+    .note.bad { background: var(--bad-bg); border-left: 4px solid var(--danger); }
+    .note.warn { background: var(--warn-bg); border-left: 4px solid var(--warn); }
+    .kv { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 3px 12px; font-size: 13px; }
+    .kv > div:nth-child(odd) { color: var(--muted); font-weight: 600; } .kv .m { font-family: var(--mono); font-size: 12.5px; word-break: break-all; }
+    .confirm-box { display: flex; gap: 8px; align-items: flex-start; background: var(--bad-bg); border: 1px solid var(--danger); border-radius: 4px; padding: 9px 12px; font-size: 13px; margin-top: 10px; }
+    .auto { display: flex; gap: 8px; align-items: center; font-size: 13px; margin-top: 10px; }
+
+    /* Tab kết quả */
+    .rtabs { display: flex; flex-wrap: wrap; border-bottom: 1px solid var(--line); padding: 0 12px; margin-top: 4px; }
+    .rtabs button { font: inherit; font-size: 12.5px; font-weight: 600; text-transform: uppercase; background: none; border: 0; padding: 10px 14px; cursor: pointer; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; }
+    .rtabs button.active { color: var(--text); border-bottom-color: var(--text); }
+    .rtabs button .cnt { font-size: 11px; background: #e0e1e2; border-radius: 8px; padding: 0 6px; margin-left: 4px; }
+    .rpane { padding: 14px 18px 18px; min-height: 70px; }
+    .state { display: inline-block; font: 600 12px var(--mono); padding: 2px 8px; border-radius: 3px; color: #fff; background: #888; }
+    .state.action { background: var(--primary); } .state.wait { background: var(--warn); color: #333; }
+    .state.finished { background: var(--ok); } .state.failed { background: var(--danger); }
+    pre.code { background: var(--code); color: #eaeaea; font: 12px/1.5 var(--mono); padding: 10px 12px; border-radius: 4px; margin: 0; white-space: pre-wrap; word-break: break-all; max-height: 460px; overflow: auto; }
+    pre.code .k { color: #ffa657; } pre.code .s { color: #a2fca2; } pre.code .n { color: #d36363; } pre.code .b { color: #fcc28c; } pre.code .z { color: #aaa; }
+    .box { border: 1px solid var(--line); border-radius: 4px; padding: 8px 12px; margin-top: 10px; }
+    .box h5 { margin: 0 0 4px; font-size: 11px; text-transform: uppercase; }
+    .exch { border: 1px solid var(--line); border-radius: 4px; margin-bottom: 12px; }
+    .exch .t { display: flex; gap: 10px; align-items: center; padding: 7px 12px; background: #f7f8fa; border-bottom: 1px solid var(--line); font-weight: 600; font-size: 13px; }
+    .exch .t .code { font-family: var(--mono); padding: 1px 6px; border-radius: 3px; color: #fff; background: #888; }
+    .exch .t .code.c2 { background: var(--ok); } .exch .t .code.c4 { background: #f2711c; } .exch .t .code.c5, .exch .t .code.c0 { background: var(--danger); }
+    .exch .t .ms { margin-left: auto; color: var(--muted); font-weight: 400; font-size: 12px; }
+    .exch .b { padding: 8px 12px; display: grid; gap: 8px; }
+    .exch h6 { margin: 0 0 3px; font-size: 11px; text-transform: uppercase; color: var(--muted); }
+    ul.checks { list-style: none; padding: 0; margin: 0; }
+    ul.checks li { padding: 3px 0 3px 22px; position: relative; }
+    ul.checks li::before { position: absolute; left: 2px; font-weight: 700; }
+    ul.checks li.ok::before { content: "✓"; color: var(--ok); } ul.checks li.bad::before { content: "✗"; color: var(--danger); }
+    ul.checks .e { color: var(--danger); font-size: 12px; }
+    table.list { width: 100%; border-collapse: collapse; font-size: 13px; }
+    table.list th, table.list td { border: 1px solid var(--line); padding: 6px 9px; text-align: left; vertical-align: top; }
+    table.list th { background: #f7f8fa; font-size: 12px; text-transform: uppercase; }
+    pre.code.full { max-height: none; }
+    .dtitle { margin: 4px 0 10px; font-size: 14px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .dtitle .code { font: 600 12px var(--mono); padding: 1px 6px; border-radius: 3px; color: #fff; background: #888; }
+    .dtitle .code.c2 { background: var(--ok); } .dtitle .code.c4, .dtitle .code.c5 { background: var(--danger); }
+    table.list td .btn.sm { margin-right: 6px; }
+    table.list td.m { font-family: var(--mono); font-size: 12px; word-break: break-all; }
+    .badge { font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 3px; color: #fff; }
+    .badge.ACTIVE { background: var(--ok); } .badge.DEACTIVATED { background: var(--danger); } .badge.PENDING { background: var(--warn); color: #333; }
+    .foot { font-size: 12.5px; color: var(--muted); padding: 10px 18px; }
+    @media (max-width: 900px) {
+      .fields { grid-template-columns: minmax(0, 1fr); } .fields.two { grid-template-columns: minmax(0, 1fr); }
+      .op .bar input { width: 100%; } .signer { margin-left: 0; }
+    }
+  </style>
+</head>
+<body>
+<header class="app-nav">
+  <div class="wrap">
+    <a class="brand" href="/ui/create">DID Registrar</a>
+    <span class="sub">did:cheqd · Client-managed Secret</span>
+    <nav>
+      <a href="/ui/create" class="active">Giao diện</a>
+      <a href="/api-docs/index.html">Tài liệu API</a>
+    </nav>
+  </div>
+</header>
+
+<div class="page">
+  <!-- Thanh chọn thao tác -->
+  <div class="seg optabs" id="optabs">
+    <a href="/ui/create" data-op="create">Tạo DID <small>create</small></a>
+    <a href="/ui/update" data-op="update">Cập nhật DID <small>update</small></a>
+    <a href="/ui/deactivate" data-op="deactivate">Vô hiệu hóa DID <small>deactivate</small></a>
+    <a href="/ui/dids" data-op="dids">Danh sách DID</a>
+    <span class="method">Phương thức: <b>did:cheqd</b></span>
+  </div>
+
+  <!-- Tiêu đề và bộ ký -->
+  <div class="seg pad head">
+    <div>
+      <h1>DID Registrar cho did:cheqd</h1>
+      <p>Thao tác theo đặc tả DIF DID Registration, chế độ Client-managed Secret. Khóa bí mật chỉ nằm ở bộ ký phía Client;
+        trang này chỉ nhận khóa công khai và chữ ký.</p>
+    </div>
+    <div class="signer">
+      <div>
+        <label for="sign-mode">Cách ký</label>
+        <select id="sign-mode">
+          <option value="agent">Bộ ký did-cli agent</option>
+          <option value="manual">Ký thủ công</option>
+        </select>
+      </div>
+      <div class="agent-only"><label for="agent-url">Địa chỉ bộ ký</label><input id="agent-url" type="text" value="http://127.0.0.1:7070"></div>
+      <div class="agent-only"><label for="agent-token">Mã ghép cặp</label><input id="agent-token" type="text" placeholder="in ra khi chạy agent"></div>
+      <div class="agent-only"><button class="btn basic" id="btn-connect">Kết nối bộ ký</button></div>
+      <div class="agent-status agent-only" id="agent-status"><span class="dot"></span><span>Chưa kết nối bộ ký</span></div>
+    </div>
+  </div>
+
+  <div id="panels"></div>
+  <datalist id="dl-jobs"></datalist>
+</div>
+
+<script>
+'use strict';
+/* ===================================================================== tiện ích */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const pretty = (v) => JSON.stringify(v, null, 2);
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch { /* bỏ qua */ } },
+};
+function hl(value) {
+  const json = typeof value === 'string' ? value : pretty(value);
+  return esc(json).replace(/(&quot;(?:\\u[a-fA-F0-9]{4}|\\[^u]|[^\\&]|&(?!quot;))*?&quot;)(\s*:)?|\b(true|false)\b|\bnull\b|-?\d+(?:\.\d+)?/g,
+    (m, str, colon, bool) => str ? (colon ? `<span class="k">${str}</span>${colon}` : `<span class="s">${str}</span>`)
+      : bool ? `<span class="b">${m}</span>` : m === 'null' ? `<span class="z">${m}</span>` : `<span class="n">${m}</span>`);
+}
+const OPS = ['create', 'update', 'deactivate'];
+const ENDPOINT = { create: '/1.0/create?method=cheqd', update: '/1.0/update', deactivate: '/1.0/deactivate' };
+const SPEC = { create: 'createDid', update: 'updateDid', deactivate: 'deactivateDid' };
+const TITLE = { create: 'Tạo DID', update: 'Cập nhật DID (thay khóa)', deactivate: 'Vô hiệu hóa DID' };
+
+/* ===================================================================== HTTP */
+async function http(method, url, body, headers = {}) {
+  const t0 = performance.now();
+  const ex = { method, url, request: body, status: 0, response: null, error: null, ms: 0 };
+  try {
+    const res = await fetch(url, { method, headers: { Accept: 'application/json', ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}), ...headers },
+      body: body !== undefined ? JSON.stringify(body) : undefined });
+    ex.status = res.status;
+    const text = await res.text();
+    try { ex.response = text ? JSON.parse(text) : null; } catch { ex.response = text; }
+  } catch (e) { ex.error = String(e.message || e); }
+  ex.ms = Math.round(performance.now() - t0);
+  return ex;
+}
+const absUrl = (u) => new URL(u, location.origin).href;
+function curl(ex) {
+  let c = `curl -X '${ex.method}' \\\n  '${absUrl(ex.url)}' \\\n  -H 'accept: application/json'`;
+  if (ex.request !== undefined) c += ` \\\n  -H 'Content-Type: application/json' \\\n  -d '${JSON.stringify(ex.request)}'`;
+  return c;
+}
+
+/* ===================================================================== bộ ký (agent) */
+const agent = {
+  ok: false,
+  url() { return $('#agent-url').value.replace(/\/+$/, ''); },
+  token() { return $('#agent-token').value.trim(); },
+  call(method, path, body) { return http(method, this.url() + path, body, { 'X-Agent-Token': this.token() }); },
+};
+const mode = () => $('#sign-mode').value;
+
+async function connectAgent() {
+  store.set('ui.agentUrl', agent.url()); store.set('ui.agentToken', agent.token());
+  const ex = await agent.call('GET', '/status');
+  agent.ok = ex.status === 200;
+  $('#agent-status').innerHTML = agent.ok
+    ? `<span class="dot ok"></span><span>Đã kết nối did-cli agent · bộ ký ${esc(ex.response.kms)} · ${esc(ex.response.keys)} khóa</span>`
+    : `<span class="dot bad"></span><span>${ex.status === 401 ? 'Sai mã ghép cặp' : ex.status === 403 ? 'Bộ ký không cho phép trang này (origin)' : 'Không kết nối được bộ ký. Hãy chạy: did-cli agent'}</span>`;
+  return agent.ok;
+}
+function applyMode() {
+  const manual = mode() === 'manual';
+  $$('.agent-only').forEach((e) => e.classList.toggle('hidden', manual));
+  $$('.manual-only').forEach((e) => e.classList.toggle('hidden', !manual));
+  store.set('ui.mode', mode());
+}
+
+/* ===================================================================== dựng các khối thao tác */
+function panelHtml(op) {
+  const g1 = op === 'create' ? `
+      <div class="grp"><h4>1. Thông tin người sở hữu <span class="hint">chỉ lưu tại ứng dụng, không ghi lên mạng</span></h4>
+        <div class="fields">
+          <div class="f"><label>Nhãn DID (label)</label><input type="text" data-f="label" placeholder="ví dụ: demo"></div>
+          <div class="f"><label>Họ tên (fullName)</label><input type="text" data-f="fullName" placeholder="Họ và tên người sở hữu"></div>
+          <div class="f"><label>Tổ chức (organization)</label><input type="text" data-f="organization" placeholder="Đơn vị"></div>
+          <div class="f"><label>Email</label><input type="email" data-f="email" placeholder="email@example.com"></div>
+        </div>
+        <div class="pdesc">DID Document trên mạng là công khai và không xóa được, nên thông tin cá nhân không được đưa vào DID Document.</div>
+      </div>` : `
+      <div class="grp"><h4>1. DID và người sở hữu <span class="right"><button class="btn basic sm" data-act="refresh">Tải lại danh sách</button></span></h4>
+        <div class="fields two">
+          <div class="f"><label>DID</label><select data-f="did" class="did-select"></select></div>
+          <div class="f"><label>Người sở hữu</label><div data-out="owner" class="pdesc" style="margin-top:8px">—</div></div>
+        </div>
+      </div>`;
+  const g2 = op === 'deactivate' ? `
+      <div class="grp"><h4>2. DID Document hiện hành <span class="hint">chỉ để xem, không gửi đi</span>
+          <span class="right"><button class="btn basic sm" data-act="current">Đọc lại từ mạng</button></span></h4>
+        <div data-out="keynote"></div>
+        <textarea class="doc" data-f="currentDoc" readonly placeholder="Chọn DID để xem DID Document hiện hành"></textarea>
+      </div>` : `
+      <div class="grp"><h4>2. DID Document ${op === 'update' ? '<span class="hint">DID Document mới chỉ chứa khóa mới</span>' : ''}
+          <span class="right">
+            <button class="btn primary sm agent-only" data-act="key">${op === 'create' ? 'Lấy khóa công khai từ bộ ký' : 'Lấy khóa mới từ bộ ký'}</button>
+          </span></h4>
+        <div class="manual-only fields two" style="margin-bottom:8px">
+          <div class="f"><label>Khóa công khai (JWK hoặc 64 ký tự hex)</label><input type="text" data-f="publicKey" placeholder='{"kty":"OKP","crv":"Ed25519","x":"..."} hoặc 64 ký tự hex'></div>
+          <div class="f" style="align-self:end"><button class="btn basic" data-act="template">Dựng DID Document (GET /1.0/did-document)</button></div>
+        </div>
+        <div data-out="keynote"></div>
+        <div class="f" style="margin-top:8px"><label>DID DOCUMENT</label>
+          <textarea class="doc" data-f="didDocument" placeholder="Bấm “${op === 'create' ? 'Lấy khóa công khai từ bộ ký' : 'Lấy khóa mới từ bộ ký'}” để Registrar dựng DID Document từ khóa công khai"></textarea></div>
+      </div>`;
+  const g3 = `
+      <div class="grp"><h4>3. Thông tin bổ sung <span class="hint">options${op === 'update' ? ', didDocumentOperation = ["setDidDocument"]' : ''}, secret</span></h4>
+        <div class="fields two">
+          <div class="f"><label>OPTIONS</label><textarea data-f="options"></textarea></div>
+          <div class="f"><label>SECRET</label><textarea data-f="secret" placeholder="{ }"></textarea>
+            <div class="pdesc">Lần gọi thứ nhất để trống. Lần gọi thứ hai chứa <code>signingResponse</code> do bộ ký tạo.</div></div>
+        </div>
+        <label class="auto agent-only"><input type="checkbox" data-f="autosign" checked> Tự động chuyển yêu cầu ký cho bộ ký và gửi lần gọi thứ hai</label>
+        ${op === 'deactivate' ? `<label class="confirm-box"><input type="checkbox" data-f="confirm">
+          <span>Tôi hiểu DID đã chọn sẽ bị vô hiệu hóa vĩnh viễn. Bộ ký sẽ hỏi xác nhận thêm một lần trên máy của tôi.</span></label>` : ''}
+      </div>`;
+  return `
+    <div class="seg op" id="op-${op}" data-op="${op}">
+      <div class="bar">
+        <button class="btn ${op === 'deactivate' ? 'danger' : 'primary'}" data-act="exec" ${op === 'deactivate' ? 'disabled' : ''}>${op} → did:cheqd</button>
+        <button class="btn dark" data-act="clear">Clear</button>
+        <button class="btn basic hidden" data-act="sign">Ký bằng bộ ký</button>
+        <span class="sep"></span>
+        <label>Job ID:</label><input type="text" data-f="jobId" list="dl-jobs" placeholder="...">
+        <button class="btn primary" data-act="check">Check State</button>
+        <a class="spec" href="/api-docs/index.html#/DID%20Registration/${SPEC[op]}">Xem đặc tả điểm cuối này ↗</a>
+      </div>
+      ${g1}${g2}${g3}
+      <div class="rtabs">
+        <button data-tab="result" class="active">Result</button>
+        <button data-tab="didState">DID State</button>
+        <button data-tab="regMeta">Registration Metadata</button>
+        <button data-tab="docMeta">Document Metadata</button>
+        <button data-tab="signer" class="agent-only">Bộ ký</button>
+        <button data-tab="log">Nhật ký API <span class="cnt" data-out="logcnt">0</span></button>
+      </div>
+      <div class="rpane" data-pane="result"><div class="pdesc">Chưa có kết quả.</div></div>
+      <div class="rpane hidden" data-pane="didState"><div class="pdesc">Chưa có kết quả.</div></div>
+      <div class="rpane hidden" data-pane="regMeta"><div class="pdesc">Chưa có kết quả.</div></div>
+      <div class="rpane hidden" data-pane="docMeta"><div class="pdesc">Chưa có kết quả.</div></div>
+      <div class="rpane hidden" data-pane="signer"><div class="pdesc">Chưa có yêu cầu ký nào được chuyển cho bộ ký.</div></div>
+      <div class="rpane hidden" data-pane="log"><div class="pdesc">Chưa có lần gọi nào.</div></div>
+      <div class="foot">${esc(TITLE[op])}: <code>POST ${esc(ENDPOINT[op])}</code>. Mỗi thao tác gồm hai lần gọi tới cùng điểm cuối:
+        lần thứ nhất nhận <code>jobId</code> và yêu cầu ký, lần thứ hai gửi <code>jobId</code> kèm <code>secret.signingResponse</code>.</div>
+    </div>`;
+}
+function didsPanelHtml() {
+  return `
+    <div class="seg op" id="op-dids" data-op="dids">
+      <div class="bar"><b>DID do ứng dụng quản lý</b> <span class="pdesc" style="margin:0">GET /api/v1/dids</span>
+        <span class="spec"><button class="btn basic sm" data-act="refresh">Tải lại</button></span></div>
+      <div class="rpane" data-out="didlist"><div class="pdesc">Đang tải…</div></div>
+      <div class="rpane hidden" data-out="diddetail"></div>
+    </div>`;
+}
+
+/* ===================================================================== trạng thái từng thao tác */
+const state = Object.fromEntries(OPS.map((op) => [op, { log: [] }]));
+const root = (op) => $('#op-' + op);
+const f = (op, name) => $(`[data-f="${name}"]`, root(op));
+const pane = (op, name) => $(`[data-pane="${name}"]`, root(op));
+function showTab(op, name) {
+  $$('.rtabs button', root(op)).forEach((b) => b.classList.toggle('active', b.dataset.tab === name));
+  $$('.rpane', root(op)).forEach((p) => p.classList.toggle('hidden', p.dataset.pane !== name));
+}
+function readJson(op, name, fallback) {
+  const v = f(op, name).value.trim();
+  if (!v) return fallback;
+  try { return JSON.parse(v); } catch { throw new Error(`Ô ${name.toUpperCase()} không phải JSON hợp lệ`); }
+}
+function setOptions(op) {
+  let o = { clientSecretMode: true, network: 'testnet' };
+  try { o = { ...o, ...JSON.parse(f(op, 'options').value || '{}') }; } catch { /* giữ mặc định */ }
+  if (op === 'create') { const label = f(op, 'label').value.trim(); if (label) o.label = label; else delete o.label; }
+  f(op, 'options').value = pretty(o);
+}
+
+function logExchange(op, title, ex) {
+  const s = state[op]; s.log.push({ title, ex });
+  $('[data-out="logcnt"]', root(op)).textContent = s.log.length;
+  pane(op, 'log').innerHTML = s.log.map(({ title, ex }, i) => {
+    const c = String(ex.status || 0)[0];
+    return `<div class="exch"><div class="t">${i + 1}. ${esc(title)} <span class="code c${c}">${ex.status || 'ERR'}</span>
+        <span style="font-family:var(--mono);font-weight:400">${esc(ex.method + ' ' + ex.url)}</span><span class="ms">${ex.ms} ms</span></div>
+      <div class="b"><div><h6>Curl</h6><pre class="code">${esc(curl(ex))}</pre></div>
+        <div><h6>Response body</h6>${ex.error ? `<pre class="code" style="color:#ff9b9b">${esc(ex.error)}</pre>` : `<pre class="code">${hl(ex.response)}</pre>`}</div></div></div>`;
+  }).join('');
+}
+
+/** Hiển thị phản hồi của Registrar ở các tab, như Universal Registrar: RESULT, DID STATE, REGISTRATION/DOCUMENT METADATA */
+function showResponse(op, resp, extraNotes = []) {
+  const s = state[op]; s.last = resp; s.notes = extraNotes;
+  const st = resp?.didState || {}; const m = resp?.didRegistrationMetadata || {};
+  if (resp?.jobId) { s.jobId = resp.jobId; f(op, 'jobId').value = resp.jobId; rememberJob(resp.jobId); }
+  pane(op, 'didState').innerHTML = resp?.didState ? `<pre class="code">${hl(resp.didState)}</pre>` : '<div class="pdesc">Không có didState.</div>';
+  pane(op, 'regMeta').innerHTML = resp?.didRegistrationMetadata ? `<pre class="code">${hl(resp.didRegistrationMetadata)}</pre>` : '<div class="pdesc">Không có.</div>';
+  pane(op, 'docMeta').innerHTML = resp?.didDocumentMetadata ? `<pre class="code">${hl(resp.didDocumentMetadata)}</pre>` : '<div class="pdesc">Không có.</div>';
+  renderResult(op);
+  const signBtn = $('[data-act="sign"]', root(op));
+  signBtn.classList.toggle('hidden', !(st.state === 'action' && mode() === 'agent'));
+}
+function renderResult(op) {
+  const s = state[op]; const resp = s.last; const st = resp?.didState || {}; const m = resp?.didRegistrationMetadata || {};
+  const kids = Object.values(st.signingRequest || {}).map((r) => r.kid);
+  let html = `<div class="kv"><div>JOBID</div><div class="m">${esc(resp?.jobId ?? s.jobId ?? '—')}</div>
+    <div>STATE</div><div><span class="state ${esc(st.state)}">${esc(st.state || '—')}</span>${st.action ? ` <code>${esc(st.action)}</code>` : ''}</div>
+    ${st.did ? `<div>DID</div><div class="m">${esc(st.did)}</div>` : ''}
+    ${kids.length ? `<div>KHÓA PHẢI KÝ</div><div class="m">${kids.map(esc).join('<br>')}</div>` : ''}
+    ${m.txHash ? `<div>GIAO DỊCH</div><div class="m">${esc(m.txHash)}</div>` : ''}
+    ${m.height ? `<div>KHỐI</div><div>${esc(m.height)}</div>` : ''}
+    ${m.versionId ? `<div>VERSIONID</div><div class="m">${esc(m.versionId)}</div>` : ''}
+    ${st.reason || m.error ? `<div>LÝ DO</div><div>${esc(st.reason || '')} ${esc(m.error || '')}</div>` : ''}</div>`;
+  if (st.state === 'action' && mode() === 'manual') {
+    html += `<div class="note info">Registrar yêu cầu ký. Lưu phản hồi ra tệp (ví dụ <code>req.json</code>) rồi chạy <code>did-cli sign req.json</code>,
+      hoặc ký <code>serializedPayload</code> bằng ví khác. Dán kết quả vào ô <b>SECRET</b> rồi bấm lại <b>${op} → did:cheqd</b>.
+      <div style="margin-top:6px"><button class="btn basic sm" data-act="copy">Chép phản hồi</button></div></div>`;
+  }
+  if (st.state === 'action' && mode() === 'agent' && !f(op, 'autosign').checked) {
+    html += `<div class="note info">Bấm <b>Ký bằng bộ ký</b> để chuyển yêu cầu ký cho bộ ký, hoặc tự ký rồi dán vào ô SECRET.</div>`;
+  }
+  if (st.state === 'finished') html += `<div class="note ok"><b>Hoàn tất.</b> Kết quả đã được mạng cheqd xác nhận.</div>`;
+  if (st.state === 'failed') html += `<div class="note bad">Thao tác thất bại${st.description ? ': ' + esc(st.description) : ''}.</div>`;
+  if (st.secret) html += `<div class="box"><h5>Secret</h5><pre class="code">${hl(st.secret)}</pre></div>`;
+  html += (s.notes || []).join('');
+  pane(op, 'result').innerHTML = html;
+}
+function addNote(op, html) { (state[op].notes = state[op].notes || []).push(html); renderResult(op); }
+function errorOnly(op, msg) { state[op].last = null; state[op].notes = []; pane(op, 'result').innerHTML = `<div class="note bad">${msg}</div>`; showTab(op, 'result'); }
+
+/* ===================================================================== DID Document từ khóa công khai */
+function renderKeyNote(op, html) { const el = $('[data-out="keynote"]', root(op)); if (el) el.innerHTML = html; }
+async function getKey(op) {
+  const s = state[op];
+  if (op === 'update' && !f(op, 'did').value) { renderKeyNote(op, '<div class="note bad">Chưa chọn DID.</div>'); return; }
+  if (!agent.ok && !(await connectAgent())) { renderKeyNote(op, '<div class="note bad">Chưa kết nối bộ ký. Nhập mã ghép cặp rồi bấm “Kết nối bộ ký”, hoặc chọn ký thủ công.</div>'); return; }
+  const ex = await agent.call('POST', '/keys', {});
+  if (ex.status !== 201) { renderKeyNote(op, `<div class="note bad">Bộ ký không sinh được khóa: ${esc(ex.error || JSON.stringify(ex.response))}</div>`); return; }
+  s.keyRef = ex.response.keyRef; s.publicJwk = ex.response.publicKeyJwk;
+  await buildTemplate(op, JSON.stringify(s.publicJwk), `Bộ ký đã sinh khóa <code>${esc(s.keyRef)}</code> và chỉ trả về khóa công khai x = <code>${esc(s.publicJwk.x)}</code>.`);
+}
+async function buildTemplate(op, publicKey, keyMsg) {
+  const s = state[op]; s.template = null;
+  if (!publicKey.trim()) { renderKeyNote(op, '<div class="note bad">Chưa nhập khóa công khai.</div>'); return; }
+  const isHex = /^[0-9a-fA-F]{64}$/.test(publicKey.trim());
+  const q = new URLSearchParams(isHex ? { publicKeyHex: publicKey.trim() } : { publicKeyJwk: publicKey.trim() });
+  if (op === 'update') { const did = f(op, 'did').value; if (!did) { renderKeyNote(op, '<div class="note bad">Chưa chọn DID.</div>'); return; } q.set('did', did); }
+  const ex = await http('GET', '/1.0/did-document?' + q.toString());
+  logExchange(op, 'Dựng DID Document từ khóa công khai', ex);
+  if (ex.status !== 200) { renderKeyNote(op, `<div class="note bad">Registrar không dựng được DID Document: ${esc(ex.response?.error?.message || ex.error || ex.status)}</div>`); return; }
+  const t = s.template = ex.response;
+  f(op, 'didDocument').value = pretty(t.didDocument);
+  f(op, 'jobId').value = ''; f(op, 'secret').value = ''; s.jobId = undefined;   // DID Document mới = thao tác mới
+  renderKeyNote(op, `<div class="note info">${keyMsg ? keyMsg + '<br>' : ''}Registrar đã dựng DID Document: DID <code>${esc(t.did)}</code>, khóa mới <code>${esc(t.keyId.split('#')[1])}</code>${t.replacedKeys ? `, khóa bị thay <code>${esc(t.replacedKeys.map((k) => k.split('#')[1]).join(', '))}</code> (cũng phải ký)` : ''}.</div>`);
+}
+
+/* ===================================================================== hai lần gọi */
+function firstBody(op) {
+  const options = readJson(op, 'options', {}); const secret = readJson(op, 'secret', {});
+  if (op === 'create') return { options, secret, didDocument: readJson(op, 'didDocument', null) };
+  if (op === 'update') return { did: f(op, 'did').value, options, secret, didDocumentOperation: ['setDidDocument'], didDocument: [readJson(op, 'didDocument', null)] };
+  return { did: f(op, 'did').value, options, secret };
+}
+/** Body gửi đi khi bấm nút thực thi: có Job ID thì là lần gọi tiếp theo (jobId + secret), không thì là lần gọi thứ nhất */
+function bodyFromForm(op) {
+  let secret = readJson(op, 'secret', {});
+  let jobId = f(op, 'jobId').value.trim();
+  if (secret && secret.jobId && secret.secret) { jobId = secret.jobId; secret = secret.secret; }   // dán nguyên kết quả của did-cli sign
+  if (jobId) return { jobId, secret };
+  return firstBody(op);
+}
+
+async function execute(op) {
+  const btn = $('[data-act="exec"]', root(op));
+  let body;
+  try {
+    if (!f(op, 'jobId').value.trim()) {
+      if (op !== 'create' && !f(op, 'did').value) throw new Error('Chưa chọn DID');
+      if (op !== 'deactivate' && !f(op, 'didDocument').value.trim()) throw new Error('Chưa có DID Document. Hãy lấy khóa công khai từ bộ ký trước');
+    }
+    body = bodyFromForm(op);
+  } catch (e) { errorOnly(op, esc(e.message) + '.'); return; }
+  btn.disabled = true;
+  try {
+    const first = !body.jobId;
+    const ex = await http('POST', ENDPOINT[op], body);
+    logExchange(op, first ? 'Lần gọi thứ nhất' : 'Gửi jobId kèm secret', ex);
+    if (!ex.response?.didState) { errorOnly(op, `Registrar trả lỗi ${ex.status || ''}: ${esc(ex.error || JSON.stringify(ex.response))}`); return; }
+    showResponse(op, ex.response); showTab(op, 'result');
+    await followUp(op, ex);
+  } finally { btn.disabled = op === 'deactivate' && !f(op, 'confirm').checked; }
+}
+
+/** Xử lý sau mỗi phản hồi: action -> bộ ký (nếu bật tự động); wait -> gọi lại; finished -> lưu người sở hữu, đối chiếu kho khóa */
+async function followUp(op, ex) {
+  const st = ex.response?.didState;
+  if (st?.state === 'action' && mode() === 'agent' && f(op, 'autosign').checked) return signWithAgent(op);
+  if (st?.state === 'wait') return poll(op);
+  if (st?.state === 'finished') return afterFinished(op, ex.response);
+}
+
+async function signWithAgent(op) {
+  const s = state[op]; const resp = s.last;
+  if (resp?.didState?.state !== 'action') return;
+  if (!agent.ok && !(await connectAgent())) { addNote(op, '<div class="note bad">Chưa kết nối bộ ký.</div>'); return; }
+  pane(op, 'signer').innerHTML = '<div class="note info">Đã chuyển yêu cầu ký cho bộ ký. Hãy xem và xác nhận trên cửa sổ của did-cli agent…</div>';
+  addNote(op, '<div class="note info" data-wait>Đang chờ bộ ký đối chiếu và xác nhận…</div>');
+  const sx = await agent.call('POST', '/sign', { response: resp, keyRef: s.keyRef, label: op === 'create' ? f(op, 'label').value.trim() || undefined : undefined });
+  s.notes = (s.notes || []).filter((n) => !n.includes('data-wait')); renderResult(op);
+  const r = sx.response || {};
+  const head = r.summary?.length ? `<div class="kv" style="margin-bottom:8px"><div>THAO TÁC</div><div>${r.summary.map(esc).join('<br>')}</div></div>` : '';
+  pane(op, 'signer').innerHTML = head + `<ul class="checks">${(r.checks || []).map((c) => `<li class="${c.errors.length ? 'bad' : 'ok'}">${esc(c.title)}${c.errors.map((e) => `<div class="e">${esc(e)}</div>`).join('')}</li>`).join('')}</ul>`;
+  if (sx.status !== 200 || !r.ok) {
+    const why = r.reason === 'USER_REJECTED' ? 'Người dùng từ chối ký trên bộ ký.'
+      : r.reason === 'CHECK_FAILED' ? 'Bộ ký từ chối ký vì đối chiếu không đạt. Không có chữ ký nào được gửi đi.'
+      : `Không gọi được bộ ký: ${esc(sx.error || r.error?.message || sx.status)}`;
+    pane(op, 'signer').insertAdjacentHTML('beforeend', `<div class="note bad">${why}</div>`);
+    const failed = (r.checks || []).filter((c) => c.errors.length);
+    addNote(op, `<div class="note bad">${why}${failed.length ? `<ul class="checks" style="margin-top:6px">${failed.map((c) => `<li class="bad">${esc(c.title)}${c.errors.map((e) => `<div class="e">${esc(e)}</div>`).join('')}</li>`).join('')}</ul>` : ''}
+      <div class="pdesc">Toàn bộ kết quả đối chiếu ở tab Bộ ký.</div></div>`);
+    showTab(op, 'result');
+    return;
+  }
+  pane(op, 'signer').insertAdjacentHTML('beforeend', '<div class="note ok">Bộ ký đã ký. Trang này chỉ nhận chữ ký, không nhận khóa bí mật.</div>');
+  f(op, 'secret').value = pretty(r.body.secret); f(op, 'jobId').value = r.body.jobId;
+  const ex = await http('POST', ENDPOINT[op], r.body);
+  logExchange(op, 'Lần gọi thứ hai: jobId + secret.signingResponse', ex);
+  if (!ex.response?.didState) { errorOnly(op, `Registrar trả lỗi ${ex.status || ''}: ${esc(ex.error || JSON.stringify(ex.response))}`); return; }
+  showResponse(op, ex.response); showTab(op, 'result');
+  await followUp(op, ex);
+}
+
+async function poll(op) {
+  let ex;
+  for (let i = 0; i < 20 && state[op].last?.didState?.state === 'wait'; i++) {
+    await sleep(Number(state[op].last.didState.waitTime) || 3000);
+    ex = await http('POST', ENDPOINT[op], { jobId: state[op].jobId });
+    logExchange(op, 'Gọi lại với jobId (state = wait)', ex);
+    if (ex.response?.didState) showResponse(op, ex.response);
+  }
+  if (ex?.response?.didState?.state === 'finished') await afterFinished(op, ex.response);
+}
+
+async function checkState(op) {
+  const jobId = f(op, 'jobId').value.trim();
+  if (!jobId) { errorOnly(op, 'Chưa nhập Job ID.'); return; }
+  state[op].jobId = jobId;
+  const ex = await http('POST', ENDPOINT[op], { jobId });
+  logExchange(op, 'Check State (gửi lại jobId)', ex);
+  if (!ex.response?.didState) { errorOnly(op, `Registrar trả lỗi ${ex.status || ''}: ${esc(ex.error || JSON.stringify(ex.response))}`); return; }
+  showResponse(op, ex.response); showTab(op, 'result');
+}
+
+async function afterFinished(op, resp) {
+  const s = state[op]; const did = resp.didState.did;
+  if (op === 'create') {
+    const owner = { fullName: f(op, 'fullName').value.trim(), organization: f(op, 'organization').value.trim(), email: f(op, 'email').value.trim() };
+    if (owner.fullName || owner.organization || owner.email) {
+      const ox = await http('PUT', `/api/v1/did-operations/${encodeURIComponent(s.jobId)}/owner`, owner);
+      logExchange(op, 'Lưu thông tin người sở hữu', ox);
+      addNote(op, ox.status === 200 ? '<div class="note ok">Đã lưu thông tin người sở hữu tại ứng dụng (không ghi lên mạng).</div>'
+        : `<div class="note warn">Không lưu được thông tin người sở hữu: ${esc(ox.response?.error?.message || ox.error || ox.status)}</div>`);
+    }
+  }
+  if (mode() === 'agent' && agent.ok) {
+    const y = await agent.call('POST', '/sync', { did });
+    if (y.status === 200) addNote(op, `<div class="note info">Bộ ký đã đối chiếu kho khóa với mạng: ${esc((y.response?.changes || []).join('; ') || 'không đổi')}.</div>`);
+    else addNote(op, `<div class="note warn"><b>Bộ ký chưa cập nhật được trạng thái khóa.</b> ${esc(y.response?.error?.message || y.error || ('HTTP ' + y.status))}
+      <br>Thao tác trên mạng đã hoàn tất. Hãy kiểm tra biến DID_API_URL của agent (agent phải gọi được Registrar), rồi chạy <code>did-cli sync ${esc(did)}</code>.</div>`);
+  }
+  s.template = null; s.keyRef = undefined;
+  await loadDids();
+}
+
+function clearOp(op) {
+  const s = state[op]; Object.assign(s, { keyRef: undefined, template: null, jobId: undefined, last: null, notes: [], log: [] });
+  $$('input[type=text], input[type=email]', root(op)).forEach((i) => { i.value = ''; });
+  if (f(op, 'didDocument')) f(op, 'didDocument').value = '';
+  f(op, 'secret').value = '';
+  f(op, 'options').value = ''; setOptions(op);
+  renderKeyNote(op, '');
+  $('[data-out="logcnt"]', root(op)).textContent = '0';
+  for (const p of ['result', 'didState', 'regMeta', 'docMeta']) pane(op, p).innerHTML = '<div class="pdesc">Chưa có kết quả.</div>';
+  pane(op, 'signer').innerHTML = '<div class="pdesc">Chưa có yêu cầu ký nào được chuyển cho bộ ký.</div>';
+  pane(op, 'log').innerHTML = '<div class="pdesc">Chưa có lần gọi nào.</div>';
+  $('[data-act="sign"]', root(op)).classList.add('hidden');
+  if (op === 'deactivate') { f(op, 'confirm').checked = false; $('[data-act="exec"]', root(op)).disabled = true; showCurrent(op); }
+  showTab(op, 'result');
+}
+
+/* ===================================================================== danh sách DID */
+let didList = [];
+async function loadDids() {
+  const ex = await http('GET', '/api/v1/dids');
+  didList = Array.isArray(ex.response) ? ex.response : [];
+  const active = didList.filter((d) => d.status === 'ACTIVE');
+  for (const sel of $$('.did-select')) {
+    const cur = sel.value || new URLSearchParams(location.search).get('did');
+    sel.innerHTML = active.length ? active.map((d) => `<option value="${esc(d.did)}">${esc(d.label ? d.label + ' · ' : '')}${esc(d.did)}</option>`).join('')
+      : '<option value="">(chưa có DID ACTIVE)</option>';
+    if (active.some((d) => d.did === cur)) sel.value = cur;
+  }
+  for (const op of ['update', 'deactivate']) showOwner(op);
+  showCurrent('deactivate');
+  $('[data-out="didlist"]').innerHTML = didList.length ? `<table class="list"><tr><th>DID</th><th>Nhãn</th><th>Người sở hữu</th><th>Tổ chức</th><th>Email</th><th>Trạng thái</th><th></th></tr>${didList.map((d) =>
+    `<tr><td class="m">${esc(d.did)}</td><td>${esc(d.label || '—')}</td><td>${esc(d.owner?.fullName || '—')}</td><td>${esc(d.owner?.organization || '—')}</td><td>${esc(d.owner?.email || '—')}</td>
+      <td><span class="badge ${esc(d.status)}">${esc(d.status)}</span></td>
+      <td><button class="btn basic sm" data-act="view" data-did="${esc(d.did)}">Xem trên mạng</button>${d.status === 'ACTIVE' ? ` <a href="/ui/update?did=${encodeURIComponent(d.did)}" data-nav="update">Thay khóa</a> · <a href="/ui/deactivate?did=${encodeURIComponent(d.did)}" data-nav="deactivate">Vô hiệu hóa</a>` : ''}</td></tr>`).join('')}</table>`
+    : '<div class="pdesc">Chưa có DID nào.</div>';
+  // đọc lại DID đang xem để phần chi tiết không giữ dữ liệu cũ sau một thao tác mới
+  if (viewedDid) viewDid(viewedDid, false);
+}
+var viewedDid = null;
+async function viewDid(did, scroll = true) {
+  viewedDid = did;
+  const box = $('[data-out="diddetail"]'); box.classList.remove('hidden');
+  box.innerHTML = '<div class="pdesc">Đang đọc DID Document từ mạng cheqd…</div>';
+  const url = '/api/v1/dids/' + encodeURIComponent(did);
+  const ex = await http('GET', url);
+  const r = ex.response; const doc = r?.didDocument; const md = r?.didDocumentMetadata ?? {};
+  const head = `<h4 class="dtitle">DID Document hiện hành trên mạng <code>GET /api/v1/dids/${esc(did)}</code>
+      <span class="code c${String(ex.status || 0)[0]}">${ex.status || 'ERR'}</span> <span class="pdesc" style="margin:0">${ex.ms} ms</span></h4>`;
+  if (ex.status !== 200 || !doc) {
+    box.innerHTML = head + `<div class="note bad">Không đọc được DID Document: ${esc(r?.error?.message || ex.error || ex.status)}</div>`;
+    return;
+  }
+  const frag = (k) => (typeof k === 'string' ? k : k.id).split('#')[1];
+  box.innerHTML = head + `<div class="kv" style="margin-bottom:10px">
+      <div>DID</div><div class="m">${esc(doc.id)}</div>
+      <div>KHÓA</div><div class="m">${esc((doc.verificationMethod ?? []).map(frag).join(', ') || '—')}</div>
+      <div>AUTHENTICATION</div><div class="m">${esc((doc.authentication ?? []).map(frag).join(', ') || '—')}</div>
+      <div>VÔ HIỆU HÓA</div><div class="m">${md.deactivated ? 'có' : 'không'}</div>
+      <div>VERSIONID</div><div class="m">${esc(md.versionId ?? '—')}</div>
+      <div>PREVIOUSVERSIONID</div><div class="m">${esc(md.previousVersionId ?? '—')}</div>
+      <div>TẠO / CẬP NHẬT</div><div class="m">${esc(md.created ?? '—')} / ${esc(md.updated ?? '—')}</div>
+    </div><pre class="code full">${hl(r)}</pre>`;
+  if (scroll) box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+function showOwner(op) {
+  const did = f(op, 'did').value; const d = didList.find((x) => x.did === did); const o = d?.owner;
+  $('[data-out="owner"]', root(op)).innerHTML = d ? `Nhãn: ${esc(d.label || '—')}${o ? ` · ${esc(o.fullName || '—')}${o.organization ? ' (' + esc(o.organization) + ')' : ''}${o.email ? ' · ' + esc(o.email) : ''}` : ' · chưa có thông tin người sở hữu'}` : '—';
+}
+async function showCurrent(op) {
+  if (op !== 'deactivate') return;
+  const did = f(op, 'did').value; const area = f(op, 'currentDoc');
+  if (!did) { area.value = ''; renderKeyNote(op, ''); return; }
+  area.value = 'Đang đọc DID Document từ mạng…';
+  const ex = await http('GET', '/api/v1/dids/' + encodeURIComponent(did));
+  if (f(op, 'did').value !== did) return;
+  const doc = ex.response?.didDocument;
+  if (ex.status !== 200 || !doc) { area.value = ''; renderKeyNote(op, `<div class="note bad">Không đọc được DID Document: ${esc(ex.response?.error?.message || ex.error || ex.status)}</div>`); return; }
+  area.value = pretty(doc);
+  const auth = (doc.authentication ?? []).map((a) => (typeof a === 'string' ? a : a.id));
+  renderKeyNote(op, `<div class="note info" style="margin:0 0 8px">Khóa sẽ phải ký: <code>${esc(auth.map((k) => k.split('#')[1]).join(', '))}</code></div>`);
+}
+function rememberJob(jobId) {
+  if (!jobId) return;
+  let jobs = []; try { jobs = JSON.parse(store.get('ui.jobs') || '[]'); } catch { /* bỏ qua */ }
+  jobs = [jobId, ...jobs.filter((j) => j !== jobId)].slice(0, 20); store.set('ui.jobs', JSON.stringify(jobs));
+  $('#dl-jobs').innerHTML = jobs.map((j) => `<option value="${esc(j)}">`).join('');
+}
+
+/* ===================================================================== điều hướng giữa các trang */
+function currentOp() {
+  const m = location.pathname.match(/\/ui\/(create|update|deactivate|dids)\/?$/);
+  return m ? m[1] : 'create';
+}
+function route() {
+  const op = currentOp();
+  $$('#optabs a').forEach((a) => a.classList.toggle('active', a.dataset.op === op));
+  $$('#panels > .op').forEach((p) => p.classList.toggle('hidden', p.dataset.op !== op));
+  const did = new URLSearchParams(location.search).get('did');
+  if (did && (op === 'update' || op === 'deactivate') && [...f(op, 'did').options].some((o) => o.value === did)) {
+    f(op, 'did').value = did; showOwner(op); showCurrent(op);
+  }
+  document.title = 'DID Registrar · ' + (op === 'dids' ? 'Danh sách DID' : TITLE[op]);
+}
+function navigate(href) { history.pushState(null, '', href); route(); }
+
+/* ===================================================================== sự kiện */
+document.addEventListener('click', async (e) => {
+  const nav = e.target.closest('#optabs a, a[data-nav]');
+  if (nav) { e.preventDefault(); navigate(nav.getAttribute('href')); return; }
+  const t = e.target.closest('button'); if (!t) return;
+  if (t.id === 'btn-connect') return connectAgent();
+  const block = t.closest('.op'); if (!block) return;
+  const op = block.dataset.op;
+  if (t.dataset.tab) return showTab(op, t.dataset.tab);
+  if (t.dataset.act === 'refresh') return loadDids();
+  if (t.dataset.act === 'view') return viewDid(t.dataset.did);
+  if (op === 'dids') return;
+  if (t.dataset.act === 'key') return getKey(op);
+  if (t.dataset.act === 'template') return buildTemplate(op, f(op, 'publicKey').value, '');
+  if (t.dataset.act === 'exec') return execute(op);
+  if (t.dataset.act === 'sign') return signWithAgent(op);
+  if (t.dataset.act === 'check') return checkState(op);
+  if (t.dataset.act === 'clear') return clearOp(op);
+  if (t.dataset.act === 'current') return showCurrent(op);
+  if (t.dataset.act === 'copy') { navigator.clipboard?.writeText(pretty(state[op].last)); t.textContent = 'Đã chép'; }
+});
+document.addEventListener('input', (e) => {
+  const block = e.target.closest('.op'); if (!block) return;
+  const op = block.dataset.op; const name = e.target.dataset.f;
+  if (name === 'label') setOptions(op);
+  if (name === 'confirm') $('[data-act="exec"]', block).disabled = !e.target.checked;
+  if (name === 'did') { state[op].template = null; f(op, 'jobId').value = ''; f(op, 'secret').value = ''; if (f(op, 'didDocument')) f(op, 'didDocument').value = ''; renderKeyNote(op, ''); showOwner(op); showCurrent(op); }
+});
+document.addEventListener('change', (e) => { if (e.target.id === 'sign-mode') { applyMode(); for (const op of OPS) if (state[op].last) showResponse(op, state[op].last); } });
+window.addEventListener('popstate', route);
+
+/* ===================================================================== khởi động */
+$('#panels').innerHTML = OPS.map(panelHtml).join('') + didsPanelHtml();
+for (const op of OPS) setOptions(op);
+if (store.get('ui.agentUrl')) $('#agent-url').value = store.get('ui.agentUrl');
+if (store.get('ui.agentToken')) $('#agent-token').value = store.get('ui.agentToken');
+if (store.get('ui.mode')) $('#sign-mode').value = store.get('ui.mode');
+const hashToken = new URLSearchParams(location.hash.slice(1)).get('token');
+if (hashToken) { $('#agent-token').value = hashToken; history.replaceState(null, '', location.pathname + location.search); }
+applyMode();
+route();
+loadDids().then(route);
+rememberJob(null);
+if (mode() === 'agent' && $('#agent-token').value) connectAgent();
+</script>
+</body>
+</html>

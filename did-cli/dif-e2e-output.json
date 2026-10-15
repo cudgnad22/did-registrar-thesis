@@ -1,0 +1,637 @@
+{
+  "registrar": "http://172.28.176.1:8085",
+  "did": "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74",
+  "results": [
+    {
+      "step": "Create với method không hỗ trợ (method=key)",
+      "ok": true,
+      "detail": "HTTP 400, state=failed, reason=unsupportedMethod"
+    },
+    {
+      "step": "Create với private key (trường d) trong publicKeyJwk",
+      "ok": true,
+      "detail": "HTTP 400, state=failed, reason=privateKeyNotAllowed"
+    },
+    {
+      "step": "Create với clientSecretMode = false",
+      "ok": true,
+      "detail": "HTTP 400, state=failed, reason=unsupportedSecretMode"
+    },
+    {
+      "step": "Create lần 1 -> yêu cầu ký",
+      "ok": true,
+      "detail": "HTTP 200, state=action"
+    },
+    {
+      "step": "Create lần 2 với chữ ký sai -> vẫn chờ ký",
+      "ok": true,
+      "detail": "HTTP 400, state=action"
+    },
+    {
+      "step": "Gọi lại jobId không kèm chữ ký -> trả lại yêu cầu ký",
+      "ok": true,
+      "detail": "HTTP 200, state=action"
+    },
+    {
+      "step": "Create lần 2 với chữ ký đúng -> hoàn tất",
+      "ok": true,
+      "detail": "HTTP 201, state=finished"
+    },
+    {
+      "step": "Gọi lại jobId đã hoàn tất -> trả kết quả đã có",
+      "ok": true,
+      "detail": "HTTP 200, state=finished"
+    },
+    {
+      "step": "Update với didDocumentOperation không hỗ trợ (addToDidDocument)",
+      "ok": true,
+      "detail": "HTTP 400, state=failed, reason=unsupportedDidDocumentOperation"
+    },
+    {
+      "step": "Update (setDidDocument, thay key-1 bằng key-2) -> yêu cầu 2 chữ ký",
+      "ok": true,
+      "detail": "HTTP 200, state=action"
+    },
+    {
+      "step": "Update lần 2 -> hoàn tất",
+      "ok": true,
+      "detail": "HTTP 200, state=finished"
+    },
+    {
+      "step": "Deactivate lần 1 -> yêu cầu ký bằng key-2",
+      "ok": true,
+      "detail": "HTTP 200, state=action"
+    },
+    {
+      "step": "Deactivate lần 2 -> hoàn tất, deactivated = true",
+      "ok": true,
+      "detail": "HTTP 200, state=finished"
+    },
+    {
+      "step": "Update DID đã vô hiệu hóa -> từ chối",
+      "ok": true,
+      "detail": "HTTP 400, state=failed, reason=didDeactivated"
+    }
+  ],
+  "evidence": {
+    "Create với method không hỗ trợ (method=key)": {
+      "status": 400,
+      "body": {
+        "jobId": null,
+        "didState": {
+          "state": "failed",
+          "did": null,
+          "reason": "unsupportedMethod",
+          "description": "Chỉ hỗ trợ DID Method cheqd (method=cheqd), nhận được: key"
+        },
+        "didRegistrationMetadata": {},
+        "didDocumentMetadata": {}
+      }
+    },
+    "Create với private key (trường d) trong publicKeyJwk": {
+      "status": 400,
+      "body": {
+        "jobId": null,
+        "didState": {
+          "state": "failed",
+          "did": "did:cheqd:testnet:0f5215bc-ace1-4f81-9749-d4ac648fcc4d",
+          "reason": "privateKeyNotAllowed",
+          "description": "did:cheqd:testnet:0f5215bc-ace1-4f81-9749-d4ac648fcc4d#key-1: publicKeyJwk chứa private key (trường d). Không gửi private key tới Registrar."
+        },
+        "didRegistrationMetadata": {},
+        "didDocumentMetadata": {}
+      }
+    },
+    "Create với clientSecretMode = false": {
+      "status": 400,
+      "body": {
+        "jobId": null,
+        "didState": {
+          "state": "failed",
+          "did": null,
+          "reason": "unsupportedSecretMode",
+          "description": "Registrar chỉ hoạt động ở Client-managed Secret Mode (options.clientSecretMode = true)"
+        },
+        "didRegistrationMetadata": {},
+        "didDocumentMetadata": {}
+      }
+    },
+    "Create lần 1 -> yêu cầu ký": {
+      "status": 200,
+      "body": {
+        "jobId": "7fe4e9b9-becf-4400-8680-99d42cba9b1e",
+        "didState": {
+          "state": "action",
+          "action": "signPayload",
+          "did": "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74",
+          "description": "Ký serializedPayload bằng khóa kid của từng signingRequest, rồi gửi lại jobId kèm secret.signingResponse",
+          "signingRequest": {
+            "signingRequest0": {
+              "payload": {
+                "didDocument": {
+                  "@context": [
+                    "https://www.w3.org/ns/did/v1"
+                  ],
+                  "id": "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74",
+                  "controller": [
+                    "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74"
+                  ],
+                  "verificationMethod": [
+                    {
+                      "id": "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74#key-1",
+                      "type": "JsonWebKey2020",
+                      "publicKeyJwk": {
+                        "kty": "OKP",
+                        "crv": "Ed25519",
+                        "x": "o27xGJSfoXVbeO5IE4jCTM5WHOkRET4TXBfs8sNI878"
+                      },
+                      "controller": "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74"
+                    }
+                  ],
+                  "authentication": [
+                    "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74#key-1"
+                  ],
+                  "assertionMethod": [
+                    "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74#key-1"
+                  ]
+                },
+                "versionId": "f4ce4c94-f4e7-49a9-b2d6-f70a2d4ed86a"
+              },
+              "serializedPayload": "ChxodHRwczovL3d3dy53My5vcmcvbnMvZGlkL3YxEjZkaWQ6Y2hlcWQ6dGVzdG5ldDowMWIzOGNjZC0yNDAyLTQ2M2YtYmQxZC1hMzlhNzUzOTBhNzQaNmRpZDpjaGVxZDp0ZXN0bmV0OjAxYjM4Y2NkLTI0MDItNDYzZi1iZDFkLWEzOWE3NTM5MGE3NCLXAQo8ZGlkOmNoZXFkOnRlc3RuZXQ6MDFiMzhjY2QtMjQwMi00NjNmLWJkMWQtYTM5YTc1MzkwYTc0I2tleS0xEg5Kc29uV2ViS2V5MjAyMBo2ZGlkOmNoZXFkOnRlc3RuZXQ6MDFiMzhjY2QtMjQwMi00NjNmLWJkMWQtYTM5YTc1MzkwYTc0Ik97Imt0eSI6Ik9LUCIsImNydiI6IkVkMjU1MTkiLCJ4IjoibzI3eEdKU2ZvWFZiZU81SUU0akNUTTVXSE9rUkVUNFRYQmZzOHNOSTg3OCJ9KjxkaWQ6Y2hlcWQ6dGVzdG5ldDowMWIzOGNjZC0yNDAyLTQ2M2YtYmQxZC1hMzlhNzUzOTBhNzQja2V5LTEyPGRpZDpjaGVxZDp0ZXN0bmV0OjAxYjM4Y2NkLTI0MDItNDYzZi1iZDFkLWEzOWE3NTM5MGE3NCNrZXktMWIkZjRjZTRjOTQtZjRlNy00OWE5LWIyZDYtZjcwYTJkNGVkODZh",
+              "kid": "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74#key-1",
+              "alg": "EdDSA",
+              "purpose": "authentication"
+            }
+          }
+        },
+        "didRegistrationMetadata": {
+          "method": "cheqd",
+          "network": "testnet",
+          "operation": "create",
+          "operationId": "7fe4e9b9-becf-4400-8680-99d42cba9b1e",
+          "versionId": "f4ce4c94-f4e7-49a9-b2d6-f70a2d4ed86a"
+        },
+        "didDocumentMetadata": {}
+      }
+    },
+    "Create lần 2 với chữ ký sai -> vẫn chờ ký": {
+      "status": 400,
+      "body": {
+        "jobId": "7fe4e9b9-becf-4400-8680-99d42cba9b1e",
+        "didState": {
+          "state": "action",
+          "action": "signPayload",
+          "did": "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74",
+          "description": "Ký serializedPayload bằng khóa kid của từng signingRequest, rồi gửi lại jobId kèm secret.signingResponse",
+          "signingRequest": {
+            "signingRequest0": {
+              "payload": {
+                "didDocument": {
+                  "@context": [
+                    "https://www.w3.org/ns/did/v1"
+                  ],
+                  "id": "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74",
+                  "controller": [
+                    "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74"
+                  ],
+                  "verificationMethod": [
+                    {
+                      "id": "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74#key-1",
+                      "type": "JsonWebKey2020",
+                      "publicKeyJwk": {
+                        "kty": "OKP",
+                        "crv": "Ed25519",
+                        "x": "o27xGJSfoXVbeO5IE4jCTM5WHOkRET4TXBfs8sNI878"
+                      },
+                      "controller": "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74"
+                    }
+                  ],
+                  "authentication": [
+                    "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74#key-1"
+                  ],
+                  "assertionMethod": [
+                    "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74#key-1"
+                  ]
+                },
+                "versionId": "f4ce4c94-f4e7-49a9-b2d6-f70a2d4ed86a"
+              },
+              "serializedPayload": "ChxodHRwczovL3d3dy53My5vcmcvbnMvZGlkL3YxEjZkaWQ6Y2hlcWQ6dGVzdG5ldDowMWIzOGNjZC0yNDAyLTQ2M2YtYmQxZC1hMzlhNzUzOTBhNzQaNmRpZDpjaGVxZDp0ZXN0bmV0OjAxYjM4Y2NkLTI0MDItNDYzZi1iZDFkLWEzOWE3NTM5MGE3NCLXAQo8ZGlkOmNoZXFkOnRlc3RuZXQ6MDFiMzhjY2QtMjQwMi00NjNmLWJkMWQtYTM5YTc1MzkwYTc0I2tleS0xEg5Kc29uV2ViS2V5MjAyMBo2ZGlkOmNoZXFkOnRlc3RuZXQ6MDFiMzhjY2QtMjQwMi00NjNmLWJkMWQtYTM5YTc1MzkwYTc0Ik97Imt0eSI6Ik9LUCIsImNydiI6IkVkMjU1MTkiLCJ4IjoibzI3eEdKU2ZvWFZiZU81SUU0akNUTTVXSE9rUkVUNFRYQmZzOHNOSTg3OCJ9KjxkaWQ6Y2hlcWQ6dGVzdG5ldDowMWIzOGNjZC0yNDAyLTQ2M2YtYmQxZC1hMzlhNzUzOTBhNzQja2V5LTEyPGRpZDpjaGVxZDp0ZXN0bmV0OjAxYjM4Y2NkLTI0MDItNDYzZi1iZDFkLWEzOWE3NTM5MGE3NCNrZXktMWIkZjRjZTRjOTQtZjRlNy00OWE5LWIyZDYtZjcwYTJkNGVkODZh",
+              "kid": "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74#key-1",
+              "alg": "EdDSA",
+              "purpose": "authentication"
+            }
+          }
+        },
+        "didRegistrationMetadata": {
+          "method": "cheqd",
+          "network": "testnet",
+          "operation": "create",
+          "operationId": "7fe4e9b9-becf-4400-8680-99d42cba9b1e",
+          "versionId": "f4ce4c94-f4e7-49a9-b2d6-f70a2d4ed86a",
+          "error": "signatureInvalid",
+          "errorMessage": "Chữ ký của did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74#key-1 không hợp lệ"
+        },
+        "didDocumentMetadata": {}
+      }
+    },
+    "Gọi lại jobId không kèm chữ ký -> trả lại yêu cầu ký": {
+      "status": 200,
+      "body": {
+        "jobId": "7fe4e9b9-becf-4400-8680-99d42cba9b1e",
+        "didState": {
+          "state": "action",
+          "action": "signPayload",
+          "did": "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74",
+          "description": "Ký serializedPayload bằng khóa kid của từng signingRequest, rồi gửi lại jobId kèm secret.signingResponse",
+          "signingRequest": {
+            "signingRequest0": {
+              "payload": {
+                "didDocument": {
+                  "@context": [
+                    "https://www.w3.org/ns/did/v1"
+                  ],
+                  "id": "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74",
+                  "controller": [
+                    "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74"
+                  ],
+                  "verificationMethod": [
+                    {
+                      "id": "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74#key-1",
+                      "type": "JsonWebKey2020",
+                      "publicKeyJwk": {
+                        "kty": "OKP",
+                        "crv": "Ed25519",
+                        "x": "o27xGJSfoXVbeO5IE4jCTM5WHOkRET4TXBfs8sNI878"
+                      },
+                      "controller": "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74"
+                    }
+                  ],
+                  "authentication": [
+                    "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74#key-1"
+                  ],
+                  "assertionMethod": [
+                    "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74#key-1"
+                  ]
+                },
+                "versionId": "f4ce4c94-f4e7-49a9-b2d6-f70a2d4ed86a"
+              },
+              "serializedPayload": "ChxodHRwczovL3d3dy53My5vcmcvbnMvZGlkL3YxEjZkaWQ6Y2hlcWQ6dGVzdG5ldDowMWIzOGNjZC0yNDAyLTQ2M2YtYmQxZC1hMzlhNzUzOTBhNzQaNmRpZDpjaGVxZDp0ZXN0bmV0OjAxYjM4Y2NkLTI0MDItNDYzZi1iZDFkLWEzOWE3NTM5MGE3NCLXAQo8ZGlkOmNoZXFkOnRlc3RuZXQ6MDFiMzhjY2QtMjQwMi00NjNmLWJkMWQtYTM5YTc1MzkwYTc0I2tleS0xEg5Kc29uV2ViS2V5MjAyMBo2ZGlkOmNoZXFkOnRlc3RuZXQ6MDFiMzhjY2QtMjQwMi00NjNmLWJkMWQtYTM5YTc1MzkwYTc0Ik97Imt0eSI6Ik9LUCIsImNydiI6IkVkMjU1MTkiLCJ4IjoibzI3eEdKU2ZvWFZiZU81SUU0akNUTTVXSE9rUkVUNFRYQmZzOHNOSTg3OCJ9KjxkaWQ6Y2hlcWQ6dGVzdG5ldDowMWIzOGNjZC0yNDAyLTQ2M2YtYmQxZC1hMzlhNzUzOTBhNzQja2V5LTEyPGRpZDpjaGVxZDp0ZXN0bmV0OjAxYjM4Y2NkLTI0MDItNDYzZi1iZDFkLWEzOWE3NTM5MGE3NCNrZXktMWIkZjRjZTRjOTQtZjRlNy00OWE5LWIyZDYtZjcwYTJkNGVkODZh",
+              "kid": "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74#key-1",
+              "alg": "EdDSA",
+              "purpose": "authentication"
+            }
+          }
+        },
+        "didRegistrationMetadata": {
+          "method": "cheqd",
+          "network": "testnet",
+          "operation": "create",
+          "operationId": "7fe4e9b9-becf-4400-8680-99d42cba9b1e",
+          "versionId": "f4ce4c94-f4e7-49a9-b2d6-f70a2d4ed86a"
+        },
+        "didDocumentMetadata": {}
+      }
+    },
+    "Create lần 2 với chữ ký đúng -> hoàn tất": {
+      "status": 201,
+      "body": {
+        "jobId": null,
+        "didState": {
+          "state": "finished",
+          "did": "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74",
+          "didDocument": {
+            "@context": [
+              "https://www.w3.org/ns/did/v1",
+              "https://w3id.org/security/suites/jws-2020/v1"
+            ],
+            "id": "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74",
+            "controller": [
+              "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74"
+            ],
+            "verificationMethod": [
+              {
+                "id": "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74#key-1",
+                "type": "JsonWebKey2020",
+                "controller": "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74",
+                "publicKeyJwk": {
+                  "kty": "OKP",
+                  "crv": "Ed25519",
+                  "x": "o27xGJSfoXVbeO5IE4jCTM5WHOkRET4TXBfs8sNI878"
+                }
+              }
+            ],
+            "authentication": [
+              "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74#key-1"
+            ],
+            "assertionMethod": [
+              "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74#key-1"
+            ]
+          }
+        },
+        "didRegistrationMetadata": {
+          "method": "cheqd",
+          "network": "testnet",
+          "operation": "create",
+          "operationId": "7fe4e9b9-becf-4400-8680-99d42cba9b1e",
+          "versionId": "f4ce4c94-f4e7-49a9-b2d6-f70a2d4ed86a",
+          "txHash": "9EBD4867D562A8686F43E3C0F4482179589D4D5DFB6D75CE21E496393793FF37",
+          "height": 319677,
+          "durationMs": 3196
+        },
+        "didDocumentMetadata": {
+          "created": "2026-10-02T00:33:09.171Z",
+          "deactivated": false,
+          "versionId": "f4ce4c94-f4e7-49a9-b2d6-f70a2d4ed86a",
+          "nextVersionId": "",
+          "previousVersionId": ""
+        }
+      }
+    },
+    "Gọi lại jobId đã hoàn tất -> trả kết quả đã có": {
+      "status": 200,
+      "body": {
+        "jobId": null,
+        "didState": {
+          "state": "finished",
+          "did": "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74"
+        },
+        "didRegistrationMetadata": {
+          "method": "cheqd",
+          "network": "testnet",
+          "operation": "create",
+          "operationId": "7fe4e9b9-becf-4400-8680-99d42cba9b1e",
+          "versionId": "f4ce4c94-f4e7-49a9-b2d6-f70a2d4ed86a",
+          "txHash": "9EBD4867D562A8686F43E3C0F4482179589D4D5DFB6D75CE21E496393793FF37",
+          "height": 319677
+        },
+        "didDocumentMetadata": {}
+      }
+    },
+    "Update với didDocumentOperation không hỗ trợ (addToDidDocument)": {
+      "status": 400,
+      "body": {
+        "jobId": null,
+        "didState": {
+          "state": "failed",
+          "did": "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74",
+          "reason": "unsupportedDidDocumentOperation",
+          "description": "Chỉ hỗ trợ didDocumentOperation [\"setDidDocument\"], nhận được: [addToDidDocument]"
+        },
+        "didRegistrationMetadata": {},
+        "didDocumentMetadata": {}
+      }
+    },
+    "Update (setDidDocument, thay key-1 bằng key-2) -> yêu cầu 2 chữ ký": {
+      "status": 200,
+      "body": {
+        "jobId": "16aaf8e9-ce30-4ff0-a3a6-0b268b44b27a",
+        "didState": {
+          "state": "action",
+          "action": "signPayload",
+          "did": "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74",
+          "description": "Ký serializedPayload bằng khóa kid của từng signingRequest, rồi gửi lại jobId kèm secret.signingResponse",
+          "signingRequest": {
+            "signingRequest0": {
+              "payload": {
+                "didDocument": {
+                  "@context": [
+                    "https://www.w3.org/ns/did/v1"
+                  ],
+                  "id": "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74",
+                  "controller": [
+                    "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74"
+                  ],
+                  "verificationMethod": [
+                    {
+                      "id": "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74#key-2",
+                      "type": "JsonWebKey2020",
+                      "publicKeyJwk": {
+                        "kty": "OKP",
+                        "crv": "Ed25519",
+                        "x": "iXACVWYlDKrfqFnaEa7l1IivqnX1yuNHg2MvlvzqKIo"
+                      },
+                      "controller": "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74"
+                    }
+                  ],
+                  "authentication": [
+                    "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74#key-2"
+                  ],
+                  "assertionMethod": [
+                    "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74#key-2"
+                  ]
+                },
+                "versionId": "e4895a50-ca3e-407f-83b1-1ef00031360d"
+              },
+              "serializedPayload": "ChxodHRwczovL3d3dy53My5vcmcvbnMvZGlkL3YxEjZkaWQ6Y2hlcWQ6dGVzdG5ldDowMWIzOGNjZC0yNDAyLTQ2M2YtYmQxZC1hMzlhNzUzOTBhNzQaNmRpZDpjaGVxZDp0ZXN0bmV0OjAxYjM4Y2NkLTI0MDItNDYzZi1iZDFkLWEzOWE3NTM5MGE3NCLXAQo8ZGlkOmNoZXFkOnRlc3RuZXQ6MDFiMzhjY2QtMjQwMi00NjNmLWJkMWQtYTM5YTc1MzkwYTc0I2tleS0yEg5Kc29uV2ViS2V5MjAyMBo2ZGlkOmNoZXFkOnRlc3RuZXQ6MDFiMzhjY2QtMjQwMi00NjNmLWJkMWQtYTM5YTc1MzkwYTc0Ik97Imt0eSI6Ik9LUCIsImNydiI6IkVkMjU1MTkiLCJ4IjoiaVhBQ1ZXWWxES3JmcUZuYUVhN2wxSWl2cW5YMXl1TkhnMk12bHZ6cUtJbyJ9KjxkaWQ6Y2hlcWQ6dGVzdG5ldDowMWIzOGNjZC0yNDAyLTQ2M2YtYmQxZC1hMzlhNzUzOTBhNzQja2V5LTIyPGRpZDpjaGVxZDp0ZXN0bmV0OjAxYjM4Y2NkLTI0MDItNDYzZi1iZDFkLWEzOWE3NTM5MGE3NCNrZXktMmIkZTQ4OTVhNTAtY2EzZS00MDdmLTgzYjEtMWVmMDAwMzEzNjBk",
+              "kid": "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74#key-2",
+              "alg": "EdDSA",
+              "purpose": "authentication"
+            },
+            "signingRequest1": {
+              "payload": {
+                "didDocument": {
+                  "@context": [
+                    "https://www.w3.org/ns/did/v1"
+                  ],
+                  "id": "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74",
+                  "controller": [
+                    "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74"
+                  ],
+                  "verificationMethod": [
+                    {
+                      "id": "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74#key-2",
+                      "type": "JsonWebKey2020",
+                      "publicKeyJwk": {
+                        "kty": "OKP",
+                        "crv": "Ed25519",
+                        "x": "iXACVWYlDKrfqFnaEa7l1IivqnX1yuNHg2MvlvzqKIo"
+                      },
+                      "controller": "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74"
+                    }
+                  ],
+                  "authentication": [
+                    "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74#key-2"
+                  ],
+                  "assertionMethod": [
+                    "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74#key-2"
+                  ]
+                },
+                "versionId": "e4895a50-ca3e-407f-83b1-1ef00031360d"
+              },
+              "serializedPayload": "ChxodHRwczovL3d3dy53My5vcmcvbnMvZGlkL3YxEjZkaWQ6Y2hlcWQ6dGVzdG5ldDowMWIzOGNjZC0yNDAyLTQ2M2YtYmQxZC1hMzlhNzUzOTBhNzQaNmRpZDpjaGVxZDp0ZXN0bmV0OjAxYjM4Y2NkLTI0MDItNDYzZi1iZDFkLWEzOWE3NTM5MGE3NCLXAQo8ZGlkOmNoZXFkOnRlc3RuZXQ6MDFiMzhjY2QtMjQwMi00NjNmLWJkMWQtYTM5YTc1MzkwYTc0I2tleS0yEg5Kc29uV2ViS2V5MjAyMBo2ZGlkOmNoZXFkOnRlc3RuZXQ6MDFiMzhjY2QtMjQwMi00NjNmLWJkMWQtYTM5YTc1MzkwYTc0Ik97Imt0eSI6Ik9LUCIsImNydiI6IkVkMjU1MTkiLCJ4IjoiaVhBQ1ZXWWxES3JmcUZuYUVhN2wxSWl2cW5YMXl1TkhnMk12bHZ6cUtJbyJ9KjxkaWQ6Y2hlcWQ6dGVzdG5ldDowMWIzOGNjZC0yNDAyLTQ2M2YtYmQxZC1hMzlhNzUzOTBhNzQja2V5LTIyPGRpZDpjaGVxZDp0ZXN0bmV0OjAxYjM4Y2NkLTI0MDItNDYzZi1iZDFkLWEzOWE3NTM5MGE3NCNrZXktMmIkZTQ4OTVhNTAtY2EzZS00MDdmLTgzYjEtMWVmMDAwMzEzNjBk",
+              "kid": "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74#key-1",
+              "alg": "EdDSA",
+              "purpose": "authentication"
+            }
+          }
+        },
+        "didRegistrationMetadata": {
+          "method": "cheqd",
+          "network": "testnet",
+          "operation": "update",
+          "operationId": "16aaf8e9-ce30-4ff0-a3a6-0b268b44b27a",
+          "versionId": "e4895a50-ca3e-407f-83b1-1ef00031360d"
+        },
+        "didDocumentMetadata": {}
+      }
+    },
+    "Update lần 2 -> hoàn tất": {
+      "status": 200,
+      "body": {
+        "jobId": null,
+        "didState": {
+          "state": "finished",
+          "did": "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74",
+          "didDocument": {
+            "@context": [
+              "https://www.w3.org/ns/did/v1",
+              "https://w3id.org/security/suites/jws-2020/v1"
+            ],
+            "id": "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74",
+            "controller": [
+              "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74"
+            ],
+            "verificationMethod": [
+              {
+                "id": "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74#key-2",
+                "type": "JsonWebKey2020",
+                "controller": "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74",
+                "publicKeyJwk": {
+                  "kty": "OKP",
+                  "crv": "Ed25519",
+                  "x": "iXACVWYlDKrfqFnaEa7l1IivqnX1yuNHg2MvlvzqKIo"
+                }
+              }
+            ],
+            "authentication": [
+              "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74#key-2"
+            ],
+            "assertionMethod": [
+              "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74#key-2"
+            ]
+          }
+        },
+        "didRegistrationMetadata": {
+          "method": "cheqd",
+          "network": "testnet",
+          "operation": "update",
+          "operationId": "16aaf8e9-ce30-4ff0-a3a6-0b268b44b27a",
+          "versionId": "e4895a50-ca3e-407f-83b1-1ef00031360d",
+          "txHash": "5ADB53491C3B8BF96E11918CD2ABDA34DF99078854CECEB5724CC8FDF5F8D5AE",
+          "height": 319679,
+          "durationMs": 3294
+        },
+        "didDocumentMetadata": {
+          "created": "2026-10-02T00:33:09.171Z",
+          "updated": "2026-10-02T00:33:11.901Z",
+          "deactivated": false,
+          "versionId": "e4895a50-ca3e-407f-83b1-1ef00031360d",
+          "nextVersionId": "",
+          "previousVersionId": "f4ce4c94-f4e7-49a9-b2d6-f70a2d4ed86a"
+        }
+      }
+    },
+    "Deactivate lần 1 -> yêu cầu ký bằng key-2": {
+      "status": 200,
+      "body": {
+        "jobId": "c872f628-6bd2-4c8d-b14e-174bfb7b83e7",
+        "didState": {
+          "state": "action",
+          "action": "signPayload",
+          "did": "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74",
+          "description": "Ký serializedPayload bằng khóa kid của từng signingRequest, rồi gửi lại jobId kèm secret.signingResponse",
+          "signingRequest": {
+            "signingRequest0": {
+              "payload": {
+                "id": "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74",
+                "versionId": "1e70d222-4f37-4b69-a5b9-ce812c773cc7"
+              },
+              "serializedPayload": "CjZkaWQ6Y2hlcWQ6dGVzdG5ldDowMWIzOGNjZC0yNDAyLTQ2M2YtYmQxZC1hMzlhNzUzOTBhNzQSJDFlNzBkMjIyLTRmMzctNGI2OS1hNWI5LWNlODEyYzc3M2NjNw==",
+              "kid": "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74#key-2",
+              "alg": "EdDSA",
+              "purpose": "authentication"
+            }
+          }
+        },
+        "didRegistrationMetadata": {
+          "method": "cheqd",
+          "network": "testnet",
+          "operation": "deactivate",
+          "operationId": "c872f628-6bd2-4c8d-b14e-174bfb7b83e7",
+          "versionId": "1e70d222-4f37-4b69-a5b9-ce812c773cc7"
+        },
+        "didDocumentMetadata": {}
+      }
+    },
+    "Deactivate lần 2 -> hoàn tất, deactivated = true": {
+      "status": 200,
+      "body": {
+        "jobId": null,
+        "didState": {
+          "state": "finished",
+          "did": "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74",
+          "didDocument": {
+            "@context": [
+              "https://www.w3.org/ns/did/v1",
+              "https://w3id.org/security/suites/jws-2020/v1"
+            ],
+            "id": "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74",
+            "controller": [
+              "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74"
+            ],
+            "verificationMethod": [
+              {
+                "id": "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74#key-2",
+                "type": "JsonWebKey2020",
+                "controller": "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74",
+                "publicKeyJwk": {
+                  "kty": "OKP",
+                  "crv": "Ed25519",
+                  "x": "iXACVWYlDKrfqFnaEa7l1IivqnX1yuNHg2MvlvzqKIo"
+                }
+              }
+            ],
+            "authentication": [
+              "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74#key-2"
+            ],
+            "assertionMethod": [
+              "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74#key-2"
+            ]
+          }
+        },
+        "didRegistrationMetadata": {
+          "method": "cheqd",
+          "network": "testnet",
+          "operation": "deactivate",
+          "operationId": "c872f628-6bd2-4c8d-b14e-174bfb7b83e7",
+          "versionId": "1e70d222-4f37-4b69-a5b9-ce812c773cc7",
+          "txHash": "CD6E2158AEF353A8109C4E75E38E11828700D0BFDB2377A8C8435FA8839BA981",
+          "height": 319682,
+          "durationMs": 3064
+        },
+        "didDocumentMetadata": {
+          "created": "2026-10-02T00:33:09.171Z",
+          "updated": "2026-10-02T00:33:15.715Z",
+          "deactivated": true,
+          "versionId": "1e70d222-4f37-4b69-a5b9-ce812c773cc7",
+          "nextVersionId": "",
+          "previousVersionId": "e4895a50-ca3e-407f-83b1-1ef00031360d"
+        }
+      }
+    },
+    "Update DID đã vô hiệu hóa -> từ chối": {
+      "status": 400,
+      "body": {
+        "jobId": null,
+        "didState": {
+          "state": "failed",
+          "did": "did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74",
+          "reason": "didDeactivated",
+          "description": "DID đã bị vô hiệu hóa: did:cheqd:testnet:01b38ccd-2402-463f-bd1d-a39a75390a74"
+        },
+        "didRegistrationMetadata": {},
+        "didDocumentMetadata": {}
+      }
+    }
+  }
+}

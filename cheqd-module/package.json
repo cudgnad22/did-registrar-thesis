@@ -1,0 +1,19 @@
+{
+  "name": "cheqd-module",
+  "version": "1.0.0",
+  "description": "Module did:cheqd noi bo cho ung dung DID Registrar (prepare/submit, Client-managed Secret)",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node --import tsx src/server.ts",
+    "dev": "node --env-file=.env --import tsx src/server.ts",
+    "test:e2e": "node --import tsx test/client-e2e.ts"
+  },
+  "dependencies": {
+    "@cheqd/sdk": "5.5.1",
+    "@cheqd/ts-proto": "4.2.1",
+    "@cosmjs/proto-signing": "0.36.2",
+    "express": "^4.21.2",
+    "tsx": "^4.19.2"
+  }
+}

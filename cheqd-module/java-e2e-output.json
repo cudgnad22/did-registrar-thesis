@@ -1,0 +1,222 @@
+{
+  "wrongSignature": {
+    "submit": {
+      "status": 400,
+      "body": {
+        "error": {
+          "code": "SIGNATURE_INVALID",
+          "message": "Chữ ký của did:cheqd:testnet:ece39d07-c53e-4825-80c1-374e6ea72283#key-1 không hợp lệ"
+        }
+      }
+    },
+    "stateAfter": "AWAITING_SIGNATURE"
+  },
+  "create": {
+    "start": {
+      "status": 202,
+      "body": {
+        "operationId": "30c821dc-65ae-4d56-9c0d-39a24213ff05",
+        "operationType": "CREATE",
+        "state": "AWAITING_SIGNATURE",
+        "did": "did:cheqd:testnet:ece39d07-c53e-4825-80c1-374e6ea72283",
+        "didDocument": {
+          "@context": [
+            "https://www.w3.org/ns/did/v1"
+          ],
+          "id": "did:cheqd:testnet:ece39d07-c53e-4825-80c1-374e6ea72283",
+          "controller": [
+            "did:cheqd:testnet:ece39d07-c53e-4825-80c1-374e6ea72283"
+          ],
+          "verificationMethod": [
+            {
+              "id": "did:cheqd:testnet:ece39d07-c53e-4825-80c1-374e6ea72283#key-1",
+              "type": "JsonWebKey2020",
+              "controller": "did:cheqd:testnet:ece39d07-c53e-4825-80c1-374e6ea72283",
+              "publicKeyJwk": {
+                "kty": "OKP",
+                "crv": "Ed25519",
+                "x": "qZpmZyECl1PNKQYYkPBUZEXqvUHa8vIHhipjq6WQ4-w"
+              }
+            }
+          ],
+          "authentication": [
+            "did:cheqd:testnet:ece39d07-c53e-4825-80c1-374e6ea72283#key-1"
+          ],
+          "assertionMethod": [
+            "did:cheqd:testnet:ece39d07-c53e-4825-80c1-374e6ea72283#key-1"
+          ]
+        },
+        "signingRequest": {
+          "alg": "EdDSA",
+          "serializedPayload": "ChxodHRwczovL3d3dy53My5vcmcvbnMvZGlkL3YxEjZkaWQ6Y2hlcWQ6dGVzdG5ldDplY2UzOWQwNy1jNTNlLTQ4MjUtODBjMS0zNzRlNmVhNzIyODMaNmRpZDpjaGVxZDp0ZXN0bmV0OmVjZTM5ZDA3LWM1M2UtNDgyNS04MGMxLTM3NGU2ZWE3MjI4MyLXAQo8ZGlkOmNoZXFkOnRlc3RuZXQ6ZWNlMzlkMDctYzUzZS00ODI1LTgwYzEtMzc0ZTZlYTcyMjgzI2tleS0xEg5Kc29uV2ViS2V5MjAyMBo2ZGlkOmNoZXFkOnRlc3RuZXQ6ZWNlMzlkMDctYzUzZS00ODI1LTgwYzEtMzc0ZTZlYTcyMjgzIk97Imt0eSI6Ik9LUCIsImNydiI6IkVkMjU1MTkiLCJ4IjoicVpwbVp5RUNsMVBOS1FZWWtQQlVaRVhxdlVIYTh2SUhoaXBqcTZXUTQtdyJ9KjxkaWQ6Y2hlcWQ6dGVzdG5ldDplY2UzOWQwNy1jNTNlLTQ4MjUtODBjMS0zNzRlNmVhNzIyODMja2V5LTEyPGRpZDpjaGVxZDp0ZXN0bmV0OmVjZTM5ZDA3LWM1M2UtNDgyNS04MGMxLTM3NGU2ZWE3MjI4MyNrZXktMWIkYmZhZjRiOGItYjk4YS00NTMwLWI4N2EtMzVlZmM4MTQxMmQ0",
+          "requiredSigners": [
+            "did:cheqd:testnet:ece39d07-c53e-4825-80c1-374e6ea72283#key-1"
+          ]
+        }
+      }
+    },
+    "complete": {
+      "status": 200,
+      "body": {
+        "operationId": "30c821dc-65ae-4d56-9c0d-39a24213ff05",
+        "operationType": "CREATE",
+        "state": "COMPLETED",
+        "did": "did:cheqd:testnet:ece39d07-c53e-4825-80c1-374e6ea72283",
+        "verificationMethodId": "did:cheqd:testnet:ece39d07-c53e-4825-80c1-374e6ea72283#key-1",
+        "txHash": "F316C31A36630C28AB9EFFB8D8B8B8AA5BA71C886A67D9A738E75E06EE80AF18",
+        "txHeight": 280644,
+        "ledgerCode": 0,
+        "errorMessage": null,
+        "createdAt": "2026-09-25T14:32:09.599546",
+        "updatedAt": "2026-09-25T14:32:13.332051"
+      }
+    }
+  },
+  "update": {
+    "start": {
+      "status": 202,
+      "body": {
+        "operationId": "79875a69-8e71-4dfd-bf83-7b8a6b30fd5d",
+        "operationType": "UPDATE",
+        "state": "AWAITING_SIGNATURE",
+        "did": "did:cheqd:testnet:ece39d07-c53e-4825-80c1-374e6ea72283",
+        "didDocument": {
+          "@context": [
+            "https://www.w3.org/ns/did/v1"
+          ],
+          "id": "did:cheqd:testnet:ece39d07-c53e-4825-80c1-374e6ea72283",
+          "controller": [
+            "did:cheqd:testnet:ece39d07-c53e-4825-80c1-374e6ea72283"
+          ],
+          "verificationMethod": [
+            {
+              "id": "did:cheqd:testnet:ece39d07-c53e-4825-80c1-374e6ea72283#key-2",
+              "type": "JsonWebKey2020",
+              "controller": "did:cheqd:testnet:ece39d07-c53e-4825-80c1-374e6ea72283",
+              "publicKeyJwk": {
+                "kty": "OKP",
+                "crv": "Ed25519",
+                "x": "iSQdzzpwFJEKPYnfxb7Xjru0_Yxjl5mqWKo64VIQLnQ"
+              }
+            }
+          ],
+          "authentication": [
+            "did:cheqd:testnet:ece39d07-c53e-4825-80c1-374e6ea72283#key-2"
+          ],
+          "assertionMethod": [
+            "did:cheqd:testnet:ece39d07-c53e-4825-80c1-374e6ea72283#key-2"
+          ]
+        },
+        "signingRequest": {
+          "alg": "EdDSA",
+          "serializedPayload": "ChxodHRwczovL3d3dy53My5vcmcvbnMvZGlkL3YxEjZkaWQ6Y2hlcWQ6dGVzdG5ldDplY2UzOWQwNy1jNTNlLTQ4MjUtODBjMS0zNzRlNmVhNzIyODMaNmRpZDpjaGVxZDp0ZXN0bmV0OmVjZTM5ZDA3LWM1M2UtNDgyNS04MGMxLTM3NGU2ZWE3MjI4MyLXAQo8ZGlkOmNoZXFkOnRlc3RuZXQ6ZWNlMzlkMDctYzUzZS00ODI1LTgwYzEtMzc0ZTZlYTcyMjgzI2tleS0yEg5Kc29uV2ViS2V5MjAyMBo2ZGlkOmNoZXFkOnRlc3RuZXQ6ZWNlMzlkMDctYzUzZS00ODI1LTgwYzEtMzc0ZTZlYTcyMjgzIk97Imt0eSI6Ik9LUCIsImNydiI6IkVkMjU1MTkiLCJ4IjoiaVNRZHp6cHdGSkVLUFluZnhiN1hqcnUwX1l4amw1bXFXS282NFZJUUxuUSJ9KjxkaWQ6Y2hlcWQ6dGVzdG5ldDplY2UzOWQwNy1jNTNlLTQ4MjUtODBjMS0zNzRlNmVhNzIyODMja2V5LTIyPGRpZDpjaGVxZDp0ZXN0bmV0OmVjZTM5ZDA3LWM1M2UtNDgyNS04MGMxLTM3NGU2ZWE3MjI4MyNrZXktMmIkNTQ3ZDc1NTUtNDkzOC00ZjAzLThkOGEtMmFiNjU2N2I1NTE3",
+          "requiredSigners": [
+            "did:cheqd:testnet:ece39d07-c53e-4825-80c1-374e6ea72283#key-2",
+            "did:cheqd:testnet:ece39d07-c53e-4825-80c1-374e6ea72283#key-1"
+          ]
+        }
+      }
+    },
+    "complete": {
+      "status": 200,
+      "body": {
+        "operationId": "79875a69-8e71-4dfd-bf83-7b8a6b30fd5d",
+        "operationType": "UPDATE",
+        "state": "COMPLETED",
+        "did": "did:cheqd:testnet:ece39d07-c53e-4825-80c1-374e6ea72283",
+        "verificationMethodId": "did:cheqd:testnet:ece39d07-c53e-4825-80c1-374e6ea72283#key-2",
+        "txHash": "D617AF7B3B63F1F8FD518A3861FE7617A64082BB2ABB3D3CAB93798858DCEC9B",
+        "txHeight": 280647,
+        "ledgerCode": 0,
+        "errorMessage": null,
+        "createdAt": "2026-09-25T14:32:13.913581",
+        "updatedAt": "2026-09-25T14:32:17.1597719"
+      }
+    }
+  },
+  "deactivate": {
+    "start": {
+      "status": 202,
+      "body": {
+        "operationId": "1a3a861f-2eca-4b58-bd5e-93269b4572cc",
+        "operationType": "DEACTIVATE",
+        "state": "AWAITING_SIGNATURE",
+        "did": "did:cheqd:testnet:ece39d07-c53e-4825-80c1-374e6ea72283",
+        "didDocument": null,
+        "signingRequest": {
+          "alg": "EdDSA",
+          "serializedPayload": "CjZkaWQ6Y2hlcWQ6dGVzdG5ldDplY2UzOWQwNy1jNTNlLTQ4MjUtODBjMS0zNzRlNmVhNzIyODMSJGMwOTYxNzY3LWRmNDktNGE0Yy1iNjRkLWJmNTBiZmM5YmZlMA==",
+          "requiredSigners": [
+            "did:cheqd:testnet:ece39d07-c53e-4825-80c1-374e6ea72283#key-2"
+          ]
+        }
+      }
+    },
+    "complete": {
+      "status": 200,
+      "body": {
+        "operationId": "1a3a861f-2eca-4b58-bd5e-93269b4572cc",
+        "operationType": "DEACTIVATE",
+        "state": "COMPLETED",
+        "did": "did:cheqd:testnet:ece39d07-c53e-4825-80c1-374e6ea72283",
+        "verificationMethodId": null,
+        "txHash": "2AF278AD05D9E2943C07F9B69F2AB404DF43CBFE67B9C2B6182C2F572637A2AB",
+        "txHeight": 280650,
+        "ledgerCode": 0,
+        "errorMessage": null,
+        "createdAt": "2026-09-25T14:32:17.212141",
+        "updatedAt": "2026-09-25T14:32:20.4352539"
+      }
+    }
+  },
+  "resolved": {
+    "status": 200,
+    "body": {
+      "didDocument": {
+        "@context": [
+          "https://www.w3.org/ns/did/v1",
+          "https://w3id.org/security/suites/jws-2020/v1"
+        ],
+        "id": "did:cheqd:testnet:ece39d07-c53e-4825-80c1-374e6ea72283",
+        "controller": [
+          "did:cheqd:testnet:ece39d07-c53e-4825-80c1-374e6ea72283"
+        ],
+        "verificationMethod": [
+          {
+            "id": "did:cheqd:testnet:ece39d07-c53e-4825-80c1-374e6ea72283#key-2",
+            "type": "JsonWebKey2020",
+            "controller": "did:cheqd:testnet:ece39d07-c53e-4825-80c1-374e6ea72283",
+            "publicKeyJwk": {
+              "kty": "OKP",
+              "crv": "Ed25519",
+              "x": "iSQdzzpwFJEKPYnfxb7Xjru0_Yxjl5mqWKo64VIQLnQ"
+            }
+          }
+        ],
+        "authentication": [
+          "did:cheqd:testnet:ece39d07-c53e-4825-80c1-374e6ea72283#key-2"
+        ],
+        "assertionMethod": [
+          "did:cheqd:testnet:ece39d07-c53e-4825-80c1-374e6ea72283#key-2"
+        ]
+      },
+      "didDocumentMetadata": {
+        "created": "2026-09-25T07:32:09.854Z",
+        "updated": "2026-09-25T07:32:17.374Z",
+        "deactivated": true,
+        "versionId": "c0961767-df49-4a4c-b64d-bf50bfc9bfe0",
+        "nextVersionId": "",
+        "previousVersionId": "547d7555-4938-4f03-8d8a-2ab6567b5517"
+      }
+    }
+  },
+  "updateAfterDeactivate": {
+    "status": 409,
+    "body": {
+      "error": {
+        "code": "INVALID_STATE",
+        "message": "DID đã bị vô hiệu hóa: did:cheqd:testnet:ece39d07-c53e-4825-80c1-374e6ea72283"
+      }
+    }
+  }
+}

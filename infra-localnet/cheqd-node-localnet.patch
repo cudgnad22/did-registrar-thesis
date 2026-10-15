@@ -1,0 +1,130 @@
+diff --git a/docker/localnet/docker-compose.yml b/docker/localnet/docker-compose.yml
+index 842e3693..40ee51fb 100644
+--- a/docker/localnet/docker-compose.yml
++++ b/docker/localnet/docker-compose.yml
+@@ -20,11 +20,15 @@ services:
+         published: 8080 # Mock price feed server port
+     entrypoint: ["node-start"]
+     healthcheck:
+-      test: curl -s http://localhost:26657/status | grep -c true
++      test:
++        - CMD-SHELL
++        - >-
++          cheqd-noded status --node tcp://127.0.0.1:26657 2>/dev/null
++          | grep -Eq '"catching_up"[[:space:]]*:[[:space:]]*false'
+       interval: 10s
+-      timeout: 2s
+-      retries: 6
+-      start_period: 15s
++      timeout: 5s
++      retries: 10
++      start_period: 30s
+     volumes:
+       - type: volume
+         source: validator-0-data
+@@ -59,11 +63,15 @@ services:
+         published: 8180 # Mock price feed server port
+     entrypoint: ["node-start"]
+     healthcheck:
+-      test: curl -s http://localhost:26757/status | grep -c true
++      test:
++        - CMD-SHELL
++        - >-
++          cheqd-noded status --node tcp://127.0.0.1:26657 2>/dev/null
++          | grep -Eq '"catching_up"[[:space:]]*:[[:space:]]*false'
+       interval: 10s
+-      timeout: 2s
+-      retries: 6
+-      start_period: 15s
++      timeout: 5s
++      retries: 10
++      start_period: 30s
+     volumes:
+       - type: volume
+         source: validator-1-data
+@@ -98,11 +106,15 @@ services:
+         published: 8280 # Mock price feed server port
+     entrypoint: ["node-start"]
+     healthcheck:
+-      test: curl -s http://localhost:26857/status | grep -c true
++      test:
++        - CMD-SHELL
++        - >-
++          cheqd-noded status --node tcp://127.0.0.1:26657 2>/dev/null
++          | grep -Eq '"catching_up"[[:space:]]*:[[:space:]]*false'
+       interval: 10s
+-      timeout: 2s
+-      retries: 6
+-      start_period: 15s
++      timeout: 5s
++      retries: 10
++      start_period: 30s
+     volumes:
+       - type: volume
+         source: validator-2-data
+@@ -137,11 +149,15 @@ services:
+         published: 8380 # Mock price feed server port
+     entrypoint: ["node-start"]
+     healthcheck:
+-      test: curl -s http://localhost:26957/status | grep -c true
++      test:
++        - CMD-SHELL
++        - >-
++          cheqd-noded status --node tcp://127.0.0.1:26657 2>/dev/null
++          | grep -Eq '"catching_up"[[:space:]]*:[[:space:]]*false'
+       interval: 10s
+-      timeout: 2s
+-      retries: 6
+-      start_period: 15s
++      timeout: 5s
++      retries: 10
++      start_period: 30s
+     volumes:
+       - type: volume
+         source: validator-3-data
+@@ -172,11 +188,15 @@ services:
+         published: 27060 # Prometheus metrics port
+     entrypoint: ["node-start"]
+     healthcheck:
+-      test: curl -s http://localhost:27057/status | grep -c true
++      test:
++        - CMD-SHELL
++        - >-
++          cheqd-noded status --node tcp://127.0.0.1:26657 2>/dev/null
++          | grep -Eq '"catching_up"[[:space:]]*:[[:space:]]*false'
+       interval: 10s
+-      timeout: 2s
+-      retries: 6
+-      start_period: 15s
++      timeout: 5s
++      retries: 10
++      start_period: 30s
+     volumes:
+       - type: volume
+         source: seed-0-data
+@@ -207,11 +227,15 @@ services:
+         published: 27160 # Prometheus metrics port
+     entrypoint: ["node-start"]
+     healthcheck:
+-      test: curl -s http://localhost:27157/status | grep -c true
++      test:
++        - CMD-SHELL
++        - >-
++          cheqd-noded status --node tcp://127.0.0.1:26657 2>/dev/null
++          | grep -Eq '"catching_up"[[:space:]]*:[[:space:]]*false'
+       interval: 10s
+-      timeout: 2s
+-      retries: 6
+-      start_period: 15s
++      timeout: 5s
++      retries: 10
++      start_period: 30s
+     volumes:
+       - type: volume
+         source: observer-0-data
+diff --git a/docker/localnet/gen-network-config.sh b/docker/localnet/gen-network-config.sh
+old mode 100644
+new mode 100755
+diff --git a/docker/localnet/import-keys.sh b/docker/localnet/import-keys.sh
+old mode 100644
+new mode 100755

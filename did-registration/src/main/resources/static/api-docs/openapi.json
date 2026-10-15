@@ -1,0 +1,1870 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "DID Registrar cho did:cheqd",
+    "version": "1.0.0",
+    "description": "Ứng dụng đăng ký định danh phi tập trung theo đặc tả **DIF DID Registration**, giữ vai trò tương đương Universal Registrar và kết nối trực tiếp tới node cheqd qua module did:cheqd (cheqd SDK).\n\n- Chế độ quản lý khóa: **Client-managed Secret Mode**. Ứng dụng không giữ khóa bí mật của controller, chỉ nhận khóa công khai và chữ ký.\n- DID Method: `cheqd`, mạng `testnet` (mạng cheqd cục bộ), DID dạng `did:cheqd:testnet:<uuid>`.\n- Khóa: Ed25519, kiểu `JsonWebKey2020`, thuật toán ký `EdDSA`.\n\nTrang liên quan: [Giao diện](/ui/create) · [Tải đặc tả OpenAPI](/api-docs/openapi.json)"
+  },
+  "servers": [
+    {
+      "url": "/",
+      "description": "Ứng dụng hiện tại"
+    }
+  ],
+  "tags": [
+    {
+      "name": "DID Registration",
+      "description": "Ba thao tác theo đặc tả DIF DID Registration (HTTPS binding).",
+      "externalDocs": {
+        "description": "DIF DID Registration",
+        "url": "https://identity.foundation/did-registration/"
+      }
+    },
+    {
+      "name": "Tra cứu",
+      "description": "API phụ trợ để xem kết quả, không thuộc đặc tả."
+    },
+    {
+      "name": "Hỗ trợ",
+      "description": "Điểm cuối phục vụ giao diện: dựng mẫu DID Document từ khóa công khai, lưu thông tin người sở hữu."
+    },
+    {
+      "name": "Thuộc tính",
+      "description": "Thông tin về khả năng của Registrar."
+    }
+  ],
+  "paths": {
+    "/1.0/create": {
+      "post": {
+        "tags": [
+          "DID Registration"
+        ],
+        "operationId": "createDid",
+        "summary": "Tạo DID",
+        "description": "Mỗi thao tác gồm hai lần gọi tới cùng điểm cuối. **Lần gọi thứ nhất** gửi yêu cầu, ứng dụng trả về `jobId` và tập `signingRequest` (state = `action`, action = `signPayload`). Client đối chiếu dữ liệu, ký `serializedPayload` bằng khóa bí mật của mình. **Lần gọi thứ hai** gửi `jobId` kèm `secret.signingResponse`.\n\nTrang tài liệu này không giữ khóa nên không ký được. Để đi hết một thao tác trên trình duyệt, dùng [giao diện của Registrar](/ui/create) kết hợp bộ ký did-cli agent, hoặc ký thủ công bằng `did-cli sign`.\n\nĐiều kiện: `didDocument` chứa ít nhất một khóa Ed25519 kiểu JsonWebKey2020 và được tham chiếu trong `authentication`. Khóa phải ký là các khóa trong `authentication` của DID Document mới.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/CreateRequest"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ContinueRequest"
+                  }
+                ]
+              },
+              "examples": {
+                "first": {
+                  "summary": "Lần gọi thứ nhất",
+                  "value": {
+                    "options": {
+                      "clientSecretMode": true,
+                      "network": "testnet",
+                      "label": "demo"
+                    },
+                    "secret": {},
+                    "didDocument": {
+                      "@context": [
+                        "https://www.w3.org/ns/did/v1"
+                      ],
+                      "verificationMethod": [
+                        {
+                          "id": "#key-1",
+                          "type": "JsonWebKey2020",
+                          "publicKeyJwk": {
+                            "kty": "OKP",
+                            "crv": "Ed25519",
+                            "x": "_UVdoJof_PHcHpr16u03q8jviZ-H0qDmU4UfReiXZc0"
+                          }
+                        }
+                      ],
+                      "authentication": [
+                        "#key-1"
+                      ],
+                      "assertionMethod": [
+                        "#key-1"
+                      ]
+                    }
+                  }
+                },
+                "second": {
+                  "summary": "Lần gọi thứ hai (gửi chữ ký)",
+                  "value": {
+                    "jobId": "343f0e64-9b9b-4f90-971a-facc87af365d",
+                    "secret": {
+                      "signingResponse": {
+                        "signingRequest0": {
+                          "signature": "q5bV0dU3rM…(rút gọn)",
+                          "kid": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd#key-1",
+                          "alg": "EdDSA"
+                        }
+                      }
+                    }
+                  },
+                  "description": "Thay <jobId> và chữ ký bằng giá trị thật. Chữ ký được tạo ở phía Client, ví dụ bằng did-cli sign hoặc did-cli agent."
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Lần gọi thứ nhất: yêu cầu ký (state = action) hoặc đang chờ mạng (state = wait).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistrarResponse"
+                },
+                "examples": {
+                  "action": {
+                    "summary": "Yêu cầu ký",
+                    "value": {
+                      "jobId": "343f0e64-9b9b-4f90-971a-facc87af365d",
+                      "didState": {
+                        "state": "action",
+                        "action": "signPayload",
+                        "did": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd",
+                        "description": "Ký serializedPayload bằng khóa kid của từng signingRequest, rồi gửi lại jobId kèm secret.signingResponse",
+                        "signingRequest": {
+                          "signingRequest0": {
+                            "payload": {
+                              "didDocument": {
+                                "@context": [
+                                  "https://www.w3.org/ns/did/v1"
+                                ],
+                                "id": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd",
+                                "controller": [
+                                  "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd"
+                                ],
+                                "verificationMethod": [
+                                  {
+                                    "id": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd#key-1",
+                                    "type": "JsonWebKey2020",
+                                    "publicKeyJwk": {
+                                      "kty": "OKP",
+                                      "crv": "Ed25519",
+                                      "x": "_UVdoJof_PHcHpr16u03q8jviZ-H0qDmU4UfReiXZc0"
+                                    },
+                                    "controller": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd"
+                                  }
+                                ],
+                                "authentication": [
+                                  "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd#key-1"
+                                ],
+                                "assertionMethod": [
+                                  "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd#key-1"
+                                ]
+                              },
+                              "versionId": "f28ce779-6c39-4b7e-b72f-7332cc15df8b"
+                            },
+                            "serializedPayload": "CiZkaWQ6Y2hlcWQ6dGVzdG5ldDow…(rút gọn)",
+                            "kid": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd#key-1",
+                            "alg": "EdDSA",
+                            "purpose": "authentication"
+                          }
+                        }
+                      },
+                      "didRegistrationMetadata": {
+                        "method": "cheqd",
+                        "network": "testnet",
+                        "operation": "create",
+                        "operationId": "343f0e64-9b9b-4f90-971a-facc87af365d",
+                        "versionId": "f28ce779-6c39-4b7e-b72f-7332cc15df8b"
+                      },
+                      "didDocumentMetadata": {}
+                    }
+                  },
+                  "wait": {
+                    "summary": "Đang chờ mạng xác nhận",
+                    "value": {
+                      "jobId": "<jobId>",
+                      "didState": {
+                        "state": "wait",
+                        "did": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd",
+                        "wait": "Giao dịch đang được gửi lên mạng cheqd, hãy gọi lại sau",
+                        "waitTime": 3000
+                      },
+                      "didRegistrationMetadata": {
+                        "method": "cheqd",
+                        "network": "testnet",
+                        "operation": "update",
+                        "operationId": "<jobId>",
+                        "versionId": "f09e9703-a93f-41f8-9b3e-49a58403beb0"
+                      },
+                      "didDocumentMetadata": {}
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Lần gọi thứ hai: DID đã được ghi lên mạng (state = finished).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistrarResponse"
+                },
+                "examples": {
+                  "finished": {
+                    "summary": "Hoàn tất",
+                    "value": {
+                      "jobId": null,
+                      "didState": {
+                        "state": "finished",
+                        "did": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd",
+                        "didDocument": {
+                          "@context": [
+                            "https://www.w3.org/ns/did/v1"
+                          ],
+                          "id": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd",
+                          "controller": [
+                            "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd"
+                          ],
+                          "verificationMethod": [
+                            {
+                              "id": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd#key-1",
+                              "type": "JsonWebKey2020",
+                              "publicKeyJwk": {
+                                "kty": "OKP",
+                                "crv": "Ed25519",
+                                "x": "_UVdoJof_PHcHpr16u03q8jviZ-H0qDmU4UfReiXZc0"
+                              },
+                              "controller": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd"
+                            }
+                          ],
+                          "authentication": [
+                            "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd#key-1"
+                          ],
+                          "assertionMethod": [
+                            "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd#key-1"
+                          ]
+                        }
+                      },
+                      "didRegistrationMetadata": {
+                        "method": "cheqd",
+                        "network": "testnet",
+                        "operation": "create",
+                        "operationId": "343f0e64-9b9b-4f90-971a-facc87af365d",
+                        "versionId": "f28ce779-6c39-4b7e-b72f-7332cc15df8b",
+                        "txHash": "692DE5AC6E0DCF1D…(rút gọn)",
+                        "height": 337107
+                      },
+                      "didDocumentMetadata": {
+                        "created": "2026-10-04T03:50:28.808Z",
+                        "versionId": "f28ce779-6c39-4b7e-b72f-7332cc15df8b"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Lỗi đầu vào, chữ ký sai hoặc mạng từ chối giao dịch (state = failed, hoặc state = action kèm didRegistrationMetadata.error khi Client có thể ký lại).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistrarResponse"
+                },
+                "examples": {
+                  "unsupportedMethod": {
+                    "summary": "Sai DID Method",
+                    "value": {
+                      "jobId": null,
+                      "didState": {
+                        "state": "failed",
+                        "did": null,
+                        "reason": "unsupportedMethod",
+                        "description": "Chỉ hỗ trợ DID Method cheqd (method=cheqd), nhận được: key"
+                      },
+                      "didRegistrationMetadata": {},
+                      "didDocumentMetadata": {}
+                    }
+                  },
+                  "invalidDidDocument": {
+                    "summary": "Thiếu DID Document",
+                    "value": {
+                      "jobId": null,
+                      "didState": {
+                        "state": "failed",
+                        "did": null,
+                        "reason": "invalidDidDocument",
+                        "description": "Client-managed Secret Mode: didDocument (một object) chứa khóa công khai của Client là bắt buộc"
+                      },
+                      "didRegistrationMetadata": {},
+                      "didDocumentMetadata": {}
+                    }
+                  },
+                  "unknownJobId": {
+                    "summary": "jobId không tồn tại",
+                    "value": {
+                      "jobId": null,
+                      "didState": {
+                        "state": "failed",
+                        "did": null,
+                        "reason": "unknownJobId",
+                        "description": "Không tìm thấy jobId: 00000000-0000-0000-0000-000000000000"
+                      },
+                      "didRegistrationMetadata": {},
+                      "didDocumentMetadata": {}
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi nội bộ hoặc module did:cheqd tạm thời không xử lý được.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistrarResponse"
+                },
+                "examples": {
+                  "moduleUnavailable": {
+                    "summary": "Module did:cheqd không chạy",
+                    "value": {
+                      "jobId": null,
+                      "didState": {
+                        "state": "failed",
+                        "did": null,
+                        "reason": "moduleUnavailable",
+                        "description": "<thông báo lỗi kết nối tới module did:cheqd>"
+                      },
+                      "didRegistrationMetadata": {},
+                      "didDocumentMetadata": {}
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "method",
+            "in": "query",
+            "required": true,
+            "description": "DID Method. Ứng dụng chỉ hỗ trợ cheqd.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "cheqd"
+              ],
+              "default": "cheqd"
+            }
+          }
+        ]
+      }
+    },
+    "/1.0/update": {
+      "post": {
+        "tags": [
+          "DID Registration"
+        ],
+        "operationId": "updateDid",
+        "summary": "Cập nhật DID (thay khóa)",
+        "description": "Mỗi thao tác gồm hai lần gọi tới cùng điểm cuối. **Lần gọi thứ nhất** gửi yêu cầu, ứng dụng trả về `jobId` và tập `signingRequest` (state = `action`, action = `signPayload`). Client đối chiếu dữ liệu, ký `serializedPayload` bằng khóa bí mật của mình. **Lần gọi thứ hai** gửi `jobId` kèm `secret.signingResponse`.\n\nTrang tài liệu này không giữ khóa nên không ký được. Để đi hết một thao tác trên trình duyệt, dùng [giao diện của Registrar](/ui/update) kết hợp bộ ký did-cli agent, hoặc ký thủ công bằng `did-cli sign`.\n\nThay khóa: DID Document mới chỉ chứa khóa mới với id mới (ví dụ `#key-2`). Theo quy tắc của did:cheqd, giao dịch phải được ký bởi cả khóa mới lẫn khóa hiện hành bị gỡ, nên có hai `signingRequest`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/UpdateRequest"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ContinueRequest"
+                  }
+                ]
+              },
+              "examples": {
+                "first": {
+                  "summary": "Lần gọi thứ nhất",
+                  "value": {
+                    "did": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd",
+                    "options": {
+                      "clientSecretMode": true,
+                      "network": "testnet"
+                    },
+                    "secret": {},
+                    "didDocumentOperation": [
+                      "setDidDocument"
+                    ],
+                    "didDocument": [
+                      {
+                        "@context": [
+                          "https://www.w3.org/ns/did/v1"
+                        ],
+                        "id": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd",
+                        "controller": [
+                          "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd"
+                        ],
+                        "verificationMethod": [
+                          {
+                            "id": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd#key-2",
+                            "type": "JsonWebKey2020",
+                            "publicKeyJwk": {
+                              "kty": "OKP",
+                              "crv": "Ed25519",
+                              "x": "1GX3dCIXsp75Je277YaQ7bLDHze7rX_bX3KQoOkUc18"
+                            },
+                            "controller": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd"
+                          }
+                        ],
+                        "authentication": [
+                          "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd#key-2"
+                        ],
+                        "assertionMethod": [
+                          "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd#key-2"
+                        ]
+                      }
+                    ]
+                  }
+                },
+                "second": {
+                  "summary": "Lần gọi thứ hai (gửi chữ ký)",
+                  "value": {
+                    "jobId": "<jobId>",
+                    "secret": {
+                      "signingResponse": {
+                        "signingRequest0": {
+                          "signature": "q5bV0dU3rM…(rút gọn)",
+                          "kid": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd#key-2",
+                          "alg": "EdDSA"
+                        },
+                        "signingRequest1": {
+                          "signature": "q5bV0dU3rM…(rút gọn)",
+                          "kid": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd#key-1",
+                          "alg": "EdDSA"
+                        }
+                      }
+                    }
+                  },
+                  "description": "Thay <jobId> và chữ ký bằng giá trị thật. Chữ ký được tạo ở phía Client, ví dụ bằng did-cli sign hoặc did-cli agent."
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Yêu cầu ký (action), đang chờ (wait) hoặc hoàn tất (finished).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistrarResponse"
+                },
+                "examples": {
+                  "action": {
+                    "summary": "Lần gọi thứ nhất: yêu cầu ký",
+                    "value": {
+                      "jobId": "<jobId>",
+                      "didState": {
+                        "state": "action",
+                        "action": "signPayload",
+                        "did": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd",
+                        "description": "Ký serializedPayload bằng khóa kid của từng signingRequest, rồi gửi lại jobId kèm secret.signingResponse",
+                        "signingRequest": {
+                          "signingRequest0": {
+                            "payload": {
+                              "didDocument": {
+                                "@context": [
+                                  "https://www.w3.org/ns/did/v1"
+                                ],
+                                "id": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd",
+                                "controller": [
+                                  "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd"
+                                ],
+                                "verificationMethod": [
+                                  {
+                                    "id": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd#key-2",
+                                    "type": "JsonWebKey2020",
+                                    "publicKeyJwk": {
+                                      "kty": "OKP",
+                                      "crv": "Ed25519",
+                                      "x": "1GX3dCIXsp75Je277YaQ7bLDHze7rX_bX3KQoOkUc18"
+                                    },
+                                    "controller": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd"
+                                  }
+                                ],
+                                "authentication": [
+                                  "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd#key-2"
+                                ],
+                                "assertionMethod": [
+                                  "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd#key-2"
+                                ]
+                              },
+                              "versionId": "f09e9703-a93f-41f8-9b3e-49a58403beb0"
+                            },
+                            "serializedPayload": "CiZkaWQ6Y2hlcWQ6dGVzdG5ldDow…(rút gọn)",
+                            "kid": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd#key-2",
+                            "alg": "EdDSA",
+                            "purpose": "authentication"
+                          },
+                          "signingRequest1": {
+                            "payload": {
+                              "didDocument": {
+                                "@context": [
+                                  "https://www.w3.org/ns/did/v1"
+                                ],
+                                "id": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd",
+                                "controller": [
+                                  "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd"
+                                ],
+                                "verificationMethod": [
+                                  {
+                                    "id": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd#key-2",
+                                    "type": "JsonWebKey2020",
+                                    "publicKeyJwk": {
+                                      "kty": "OKP",
+                                      "crv": "Ed25519",
+                                      "x": "1GX3dCIXsp75Je277YaQ7bLDHze7rX_bX3KQoOkUc18"
+                                    },
+                                    "controller": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd"
+                                  }
+                                ],
+                                "authentication": [
+                                  "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd#key-2"
+                                ],
+                                "assertionMethod": [
+                                  "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd#key-2"
+                                ]
+                              },
+                              "versionId": "f09e9703-a93f-41f8-9b3e-49a58403beb0"
+                            },
+                            "serializedPayload": "CiZkaWQ6Y2hlcWQ6dGVzdG5ldDow…(rút gọn)",
+                            "kid": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd#key-1",
+                            "alg": "EdDSA",
+                            "purpose": "authentication"
+                          }
+                        }
+                      },
+                      "didRegistrationMetadata": {
+                        "method": "cheqd",
+                        "network": "testnet",
+                        "operation": "update",
+                        "operationId": "<jobId>",
+                        "versionId": "f09e9703-a93f-41f8-9b3e-49a58403beb0"
+                      },
+                      "didDocumentMetadata": {}
+                    }
+                  },
+                  "finished": {
+                    "summary": "Lần gọi thứ hai: hoàn tất",
+                    "value": {
+                      "jobId": null,
+                      "didState": {
+                        "state": "finished",
+                        "did": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd",
+                        "didDocument": {
+                          "@context": [
+                            "https://www.w3.org/ns/did/v1"
+                          ],
+                          "id": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd",
+                          "controller": [
+                            "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd"
+                          ],
+                          "verificationMethod": [
+                            {
+                              "id": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd#key-2",
+                              "type": "JsonWebKey2020",
+                              "publicKeyJwk": {
+                                "kty": "OKP",
+                                "crv": "Ed25519",
+                                "x": "1GX3dCIXsp75Je277YaQ7bLDHze7rX_bX3KQoOkUc18"
+                              },
+                              "controller": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd"
+                            }
+                          ],
+                          "authentication": [
+                            "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd#key-2"
+                          ],
+                          "assertionMethod": [
+                            "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd#key-2"
+                          ]
+                        }
+                      },
+                      "didRegistrationMetadata": {
+                        "method": "cheqd",
+                        "network": "testnet",
+                        "operation": "update",
+                        "operationId": "<jobId>",
+                        "versionId": "f09e9703-a93f-41f8-9b3e-49a58403beb0",
+                        "txHash": "<txHash>",
+                        "height": 337347
+                      },
+                      "didDocumentMetadata": {
+                        "versionId": "f09e9703-a93f-41f8-9b3e-49a58403beb0",
+                        "previousVersionId": "f28ce779-6c39-4b7e-b72f-7332cc15df8b"
+                      }
+                    }
+                  },
+                  "wait": {
+                    "summary": "Đang chờ mạng xác nhận",
+                    "value": {
+                      "jobId": "<jobId>",
+                      "didState": {
+                        "state": "wait",
+                        "did": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd",
+                        "wait": "Giao dịch đang được gửi lên mạng cheqd, hãy gọi lại sau",
+                        "waitTime": 3000
+                      },
+                      "didRegistrationMetadata": {
+                        "method": "cheqd",
+                        "network": "testnet",
+                        "operation": "update",
+                        "operationId": "<jobId>",
+                        "versionId": "f09e9703-a93f-41f8-9b3e-49a58403beb0"
+                      },
+                      "didDocumentMetadata": {}
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Lỗi đầu vào, chữ ký sai hoặc mạng từ chối giao dịch (state = failed, hoặc state = action kèm didRegistrationMetadata.error khi Client có thể ký lại).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistrarResponse"
+                },
+                "examples": {
+                  "unsupportedDidDocumentOperation": {
+                    "summary": "Thao tác không hỗ trợ",
+                    "value": {
+                      "jobId": null,
+                      "didState": {
+                        "state": "failed",
+                        "did": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd",
+                        "reason": "unsupportedDidDocumentOperation",
+                        "description": "Chỉ hỗ trợ didDocumentOperation [\"setDidDocument\"], nhận được: [addToDidDocument]"
+                      },
+                      "didRegistrationMetadata": {},
+                      "didDocumentMetadata": {}
+                    }
+                  },
+                  "didDeactivated": {
+                    "summary": "DID đã vô hiệu hóa",
+                    "value": {
+                      "jobId": null,
+                      "didState": {
+                        "state": "failed",
+                        "did": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd",
+                        "reason": "didDeactivated",
+                        "description": "DID đã bị vô hiệu hóa: did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd"
+                      },
+                      "didRegistrationMetadata": {},
+                      "didDocumentMetadata": {}
+                    }
+                  },
+                  "operationInProgress": {
+                    "summary": "Đang có giao dịch chờ",
+                    "value": {
+                      "jobId": null,
+                      "didState": {
+                        "state": "failed",
+                        "did": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd",
+                        "reason": "operationInProgress",
+                        "description": "DID đang có giao dịch chờ mạng xác nhận"
+                      },
+                      "didRegistrationMetadata": {},
+                      "didDocumentMetadata": {}
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi nội bộ hoặc module did:cheqd tạm thời không xử lý được.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistrarResponse"
+                },
+                "examples": {
+                  "moduleUnavailable": {
+                    "summary": "Module did:cheqd không chạy",
+                    "value": {
+                      "jobId": null,
+                      "didState": {
+                        "state": "failed",
+                        "did": null,
+                        "reason": "moduleUnavailable",
+                        "description": "<thông báo lỗi kết nối tới module did:cheqd>"
+                      },
+                      "didRegistrationMetadata": {},
+                      "didDocumentMetadata": {}
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/1.0/deactivate": {
+      "post": {
+        "tags": [
+          "DID Registration"
+        ],
+        "operationId": "deactivateDid",
+        "summary": "Vô hiệu hóa DID",
+        "description": "Mỗi thao tác gồm hai lần gọi tới cùng điểm cuối. **Lần gọi thứ nhất** gửi yêu cầu, ứng dụng trả về `jobId` và tập `signingRequest` (state = `action`, action = `signPayload`). Client đối chiếu dữ liệu, ký `serializedPayload` bằng khóa bí mật của mình. **Lần gọi thứ hai** gửi `jobId` kèm `secret.signingResponse`.\n\nTrang tài liệu này không giữ khóa nên không ký được. Để đi hết một thao tác trên trình duyệt, dùng [giao diện của Registrar](/ui/deactivate) kết hợp bộ ký did-cli agent, hoặc ký thủ công bằng `did-cli sign`.\n\nGiao dịch được ký bởi các khóa trong `authentication` của DID Document hiện hành. **DID đã vô hiệu hóa không thể cập nhật hay kích hoạt lại.**",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/DeactivateRequest"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ContinueRequest"
+                  }
+                ]
+              },
+              "examples": {
+                "first": {
+                  "summary": "Lần gọi thứ nhất",
+                  "value": {
+                    "did": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd",
+                    "options": {
+                      "clientSecretMode": true,
+                      "network": "testnet"
+                    },
+                    "secret": {}
+                  }
+                },
+                "second": {
+                  "summary": "Lần gọi thứ hai (gửi chữ ký)",
+                  "value": {
+                    "jobId": "<jobId>",
+                    "secret": {
+                      "signingResponse": {
+                        "signingRequest0": {
+                          "signature": "q5bV0dU3rM…(rút gọn)",
+                          "kid": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd#key-2",
+                          "alg": "EdDSA"
+                        }
+                      }
+                    }
+                  },
+                  "description": "Thay <jobId> và chữ ký bằng giá trị thật. Chữ ký được tạo ở phía Client, ví dụ bằng did-cli sign hoặc did-cli agent."
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Yêu cầu ký (action), đang chờ (wait) hoặc hoàn tất (finished).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistrarResponse"
+                },
+                "examples": {
+                  "action": {
+                    "summary": "Lần gọi thứ nhất: yêu cầu ký",
+                    "value": {
+                      "jobId": "<jobId>",
+                      "didState": {
+                        "state": "action",
+                        "action": "signPayload",
+                        "did": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd",
+                        "description": "Ký serializedPayload bằng khóa kid của từng signingRequest, rồi gửi lại jobId kèm secret.signingResponse",
+                        "signingRequest": {
+                          "signingRequest0": {
+                            "payload": {
+                              "id": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd",
+                              "versionId": "4e58f2bb-5ac9-4beb-9475-3e991bb8cbd6"
+                            },
+                            "serializedPayload": "CiZkaWQ6Y2hlcWQ6dGVzdG5ldDow…(rút gọn)",
+                            "kid": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd#key-2",
+                            "alg": "EdDSA",
+                            "purpose": "authentication"
+                          }
+                        }
+                      },
+                      "didRegistrationMetadata": {
+                        "method": "cheqd",
+                        "network": "testnet",
+                        "operation": "deactivate",
+                        "operationId": "<jobId>",
+                        "versionId": "4e58f2bb-5ac9-4beb-9475-3e991bb8cbd6"
+                      },
+                      "didDocumentMetadata": {}
+                    }
+                  },
+                  "finished": {
+                    "summary": "Lần gọi thứ hai: hoàn tất",
+                    "value": {
+                      "jobId": null,
+                      "didState": {
+                        "state": "finished",
+                        "did": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd"
+                      },
+                      "didRegistrationMetadata": {
+                        "method": "cheqd",
+                        "network": "testnet",
+                        "operation": "deactivate",
+                        "operationId": "<jobId>",
+                        "versionId": "4e58f2bb-5ac9-4beb-9475-3e991bb8cbd6",
+                        "txHash": "<txHash>",
+                        "height": 343954
+                      },
+                      "didDocumentMetadata": {
+                        "deactivated": true,
+                        "versionId": "4e58f2bb-5ac9-4beb-9475-3e991bb8cbd6",
+                        "previousVersionId": "f09e9703-a93f-41f8-9b3e-49a58403beb0"
+                      }
+                    }
+                  },
+                  "wait": {
+                    "summary": "Đang chờ mạng xác nhận",
+                    "value": {
+                      "jobId": "<jobId>",
+                      "didState": {
+                        "state": "wait",
+                        "did": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd",
+                        "wait": "Giao dịch đang được gửi lên mạng cheqd, hãy gọi lại sau",
+                        "waitTime": 3000
+                      },
+                      "didRegistrationMetadata": {
+                        "method": "cheqd",
+                        "network": "testnet",
+                        "operation": "update",
+                        "operationId": "<jobId>",
+                        "versionId": "f09e9703-a93f-41f8-9b3e-49a58403beb0"
+                      },
+                      "didDocumentMetadata": {}
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Lỗi đầu vào, chữ ký sai hoặc mạng từ chối giao dịch (state = failed, hoặc state = action kèm didRegistrationMetadata.error khi Client có thể ký lại).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistrarResponse"
+                },
+                "examples": {
+                  "invalidRequest": {
+                    "summary": "Gửi kèm DID Document",
+                    "value": {
+                      "jobId": null,
+                      "didState": {
+                        "state": "failed",
+                        "did": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd",
+                        "reason": "invalidRequest",
+                        "description": "deactivate: không được gửi didDocument"
+                      },
+                      "didRegistrationMetadata": {},
+                      "didDocumentMetadata": {}
+                    }
+                  },
+                  "invalidDid": {
+                    "summary": "Sai định dạng DID",
+                    "value": {
+                      "jobId": null,
+                      "didState": {
+                        "state": "failed",
+                        "did": "did:example:123",
+                        "reason": "invalidDid",
+                        "description": "DID phải có dạng did:cheqd:testnet:<uuid>, nhận được: did:example:123"
+                      },
+                      "didRegistrationMetadata": {},
+                      "didDocumentMetadata": {}
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi nội bộ hoặc module did:cheqd tạm thời không xử lý được.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistrarResponse"
+                },
+                "examples": {
+                  "moduleUnavailable": {
+                    "summary": "Module did:cheqd không chạy",
+                    "value": {
+                      "jobId": null,
+                      "didState": {
+                        "state": "failed",
+                        "did": null,
+                        "reason": "moduleUnavailable",
+                        "description": "<thông báo lỗi kết nối tới module did:cheqd>"
+                      },
+                      "didRegistrationMetadata": {},
+                      "didDocumentMetadata": {}
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dids/{did}": {
+      "get": {
+        "tags": [
+          "Tra cứu"
+        ],
+        "operationId": "resolveDid",
+        "summary": "Đọc DID Document hiện hành từ mạng cheqd",
+        "description": "API phụ trợ, không thuộc đặc tả DID Registration. Ứng dụng hỏi module did:cheqd, module đọc trực tiếp từ node cheqd.",
+        "parameters": [
+          {
+            "name": "did",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "DID Document và metadata.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "didDocument": {
+                    "@context": [
+                      "https://www.w3.org/ns/did/v1"
+                    ],
+                    "id": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd",
+                    "controller": [
+                      "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd"
+                    ],
+                    "verificationMethod": [
+                      {
+                        "id": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd#key-2",
+                        "type": "JsonWebKey2020",
+                        "publicKeyJwk": {
+                          "kty": "OKP",
+                          "crv": "Ed25519",
+                          "x": "1GX3dCIXsp75Je277YaQ7bLDHze7rX_bX3KQoOkUc18"
+                        },
+                        "controller": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd"
+                      }
+                    ],
+                    "authentication": [
+                      "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd#key-2"
+                    ],
+                    "assertionMethod": [
+                      "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd#key-2"
+                    ]
+                  },
+                  "didDocumentMetadata": {
+                    "versionId": "f09e9703-a93f-41f8-9b3e-49a58403beb0",
+                    "previousVersionId": "f28ce779-6c39-4b7e-b72f-7332cc15df8b"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "DID không tồn tại trên mạng.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Không đọc được từ mạng cheqd.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Module did:cheqd không chạy.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                },
+                "example": {
+                  "error": {
+                    "code": "MODULE_UNAVAILABLE",
+                    "message": "Không kết nối được module did:cheqd"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/did-operations/{jobId}": {
+      "get": {
+        "tags": [
+          "Tra cứu"
+        ],
+        "operationId": "getOperation",
+        "summary": "Trạng thái một thao tác theo jobId",
+        "description": "API phụ trợ. Đọc bản ghi thao tác lưu tại ứng dụng (không hỏi mạng).",
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "343f0e64-9b9b-4f90-971a-facc87af365d"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bản ghi thao tác.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationResult"
+                },
+                "example": {
+                  "operationId": "343f0e64-9b9b-4f90-971a-facc87af365d",
+                  "operationType": "CREATE",
+                  "state": "COMPLETED",
+                  "did": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd",
+                  "txHash": "692DE5AC6E0DCF1D…(rút gọn)",
+                  "txHeight": 337107,
+                  "ledgerCode": null,
+                  "errorMessage": null,
+                  "createdAt": "<thời điểm tạo>",
+                  "updatedAt": "<thời điểm cập nhật>"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Không có thao tác với jobId này.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                },
+                "example": {
+                  "error": {
+                    "code": "NOT_FOUND",
+                    "message": "Không tìm thấy thao tác: <jobId>"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/1.0/methods": {
+      "get": {
+        "tags": [
+          "Thuộc tính"
+        ],
+        "operationId": "getMethods",
+        "summary": "Danh sách DID Method được hỗ trợ",
+        "responses": {
+          "200": {
+            "description": "Danh sách tên DID Method.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "example": [
+                  "cheqd"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/1.0/properties": {
+      "get": {
+        "tags": [
+          "Thuộc tính"
+        ],
+        "operationId": "getProperties",
+        "summary": "Thuộc tính cấu hình của Registrar",
+        "responses": {
+          "200": {
+            "description": "Thuộc tính theo từng DID Method.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistrarProperties"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/1.0/did-document": {
+      "get": {
+        "tags": [
+          "Hỗ trợ"
+        ],
+        "operationId": "getDidDocumentTemplate",
+        "summary": "Dựng mẫu DID Document từ khóa công khai",
+        "description": "Điểm cuối hỗ trợ, tương tự nhóm Cheqd Helpers của cheqd did-registrar. Chỉ nhận **khóa công khai** (JWK hoặc 32 byte dạng hex, là dạng mà một số ví xuất ra). Không lưu gì và không ghi lên mạng.\n\n- Không có `did`: sinh DID mới, khóa có id `#key-1`.\n- Có `did`: đọc DID Document hiện hành trên mạng, khóa mới có id `#key-(n+1)`; `replacedKeys` là các khóa bị gỡ, cũng phải ký khi thay khóa.\n\nỨng dụng không có điểm cuối sinh khóa: khóa bí mật luôn được sinh ở phía Client. Client vẫn phải đối chiếu DID Document này trước khi ký.",
+        "parameters": [
+          {
+            "name": "publicKeyJwk",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "JWK dạng JSON: {\"kty\":\"OKP\",\"crv\":\"Ed25519\",\"x\":\"...\"}",
+            "example": "{\"kty\": \"OKP\", \"crv\": \"Ed25519\", \"x\": \"_UVdoJof_PHcHpr16u03q8jviZ-H0qDmU4UfReiXZc0\"}"
+          },
+          {
+            "name": "publicKeyHex",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "32 byte khóa công khai Ed25519 dạng hex (64 ký tự)"
+          },
+          {
+            "name": "did",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Để trống khi tạo DID mới; điền DID khi thay khóa"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mẫu DID Document",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "create": {
+                    "summary": "Tạo DID mới",
+                    "value": {
+                      "operation": "create",
+                      "did": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd",
+                      "keyId": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd#key-1",
+                      "didDocument": {
+                        "@context": [
+                          "https://www.w3.org/ns/did/v1"
+                        ],
+                        "id": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd",
+                        "controller": [
+                          "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd"
+                        ],
+                        "verificationMethod": [
+                          {
+                            "id": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd#key-1",
+                            "type": "JsonWebKey2020",
+                            "publicKeyJwk": {
+                              "kty": "OKP",
+                              "crv": "Ed25519",
+                              "x": "_UVdoJof_PHcHpr16u03q8jviZ-H0qDmU4UfReiXZc0"
+                            },
+                            "controller": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd"
+                          }
+                        ],
+                        "authentication": [
+                          "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd#key-1"
+                        ],
+                        "assertionMethod": [
+                          "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd#key-1"
+                        ]
+                      }
+                    }
+                  },
+                  "update": {
+                    "summary": "Thay khóa",
+                    "value": {
+                      "operation": "update",
+                      "did": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd",
+                      "keyId": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd#key-2",
+                      "replacedKeys": [
+                        "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd#key-1"
+                      ],
+                      "didDocument": {
+                        "@context": [
+                          "https://www.w3.org/ns/did/v1"
+                        ],
+                        "id": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd",
+                        "controller": [
+                          "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd"
+                        ],
+                        "verificationMethod": [
+                          {
+                            "id": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd#key-2",
+                            "type": "JsonWebKey2020",
+                            "publicKeyJwk": {
+                              "kty": "OKP",
+                              "crv": "Ed25519",
+                              "x": "1GX3dCIXsp75Je277YaQ7bLDHze7rX_bX3KQoOkUc18"
+                            },
+                            "controller": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd"
+                          }
+                        ],
+                        "authentication": [
+                          "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd#key-2"
+                        ],
+                        "assertionMethod": [
+                          "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd#key-2"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Khóa công khai không hợp lệ, có trường d (khóa bí mật), hoặc khóa đã có trong DID Document",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                },
+                "example": {
+                  "error": {
+                    "code": "PRIVATE_KEY_NOT_ALLOWED",
+                    "message": "publicKeyJwk chứa khóa bí mật (trường d). Không gửi khóa bí mật tới Registrar."
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "DID không tồn tại trên mạng",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "DID đã bị vô hiệu hóa",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/did-operations/{jobId}/owner": {
+      "put": {
+        "tags": [
+          "Hỗ trợ"
+        ],
+        "operationId": "saveOwner",
+        "summary": "Ghi thông tin người sở hữu sau khi tạo DID",
+        "description": "Thông tin người sở hữu chỉ lưu tại ứng dụng, **không** đưa vào DID Document vì DID Document trên mạng là công khai và không xóa được. Chỉ ghi được một lần, bằng jobId của thao tác tạo DID đã hoàn tất.",
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "fullName": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "organization": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "maxLength": 200
+                  }
+                }
+              },
+              "example": {
+                "fullName": "<họ tên>",
+                "organization": "<đơn vị>",
+                "email": "user@example.com"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Đã lưu"
+          },
+          "404": {
+            "description": "Không có thao tác",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Thao tác chưa hoàn tất hoặc DID đã có thông tin người sở hữu",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dids": {
+      "get": {
+        "tags": [
+          "Tra cứu"
+        ],
+        "operationId": "listDids",
+        "summary": "Danh sách DID do ứng dụng quản lý",
+        "description": "Đọc từ cơ sở dữ liệu của ứng dụng, kèm thông tin người sở hữu nếu có.",
+        "responses": {
+          "200": {
+            "description": "Danh sách DID",
+            "content": {
+              "application/json": {
+                "example": [
+                  {
+                    "did": "did:cheqd:testnet:04e78724-a0dd-4900-92df-3ef3f33765dd",
+                    "label": "demo",
+                    "status": "ACTIVE",
+                    "createdAt": "<thời điểm tạo>",
+                    "updatedAt": null,
+                    "owner": {
+                      "fullName": "<họ tên>",
+                      "organization": "<đơn vị>",
+                      "email": "<email>",
+                      "createdAt": "<thời điểm ghi>"
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "RequestOptions": {
+        "type": "object",
+        "description": "Tùy chọn của yêu cầu. Ứng dụng chỉ hỗ trợ một chế độ quản lý khóa và một mạng.",
+        "properties": {
+          "clientSecretMode": {
+            "type": "boolean",
+            "enum": [
+              true
+            ],
+            "description": "Client-managed Secret Mode. Nếu có thì phải là true."
+          },
+          "network": {
+            "type": "string",
+            "enum": [
+              "testnet"
+            ],
+            "description": "Mạng cheqd. Chỉ hỗ trợ testnet (mạng cheqd cục bộ)."
+          },
+          "label": {
+            "type": "string",
+            "description": "Nhãn gợi nhớ, chỉ dùng khi tạo DID và chỉ lưu tại ứng dụng."
+          }
+        }
+      },
+      "PublicKeyJwk": {
+        "type": "object",
+        "required": [
+          "kty",
+          "crv",
+          "x"
+        ],
+        "description": "Khóa công khai Ed25519 dạng JWK. Không được có trường d (khóa bí mật).",
+        "properties": {
+          "kty": {
+            "type": "string",
+            "enum": [
+              "OKP"
+            ]
+          },
+          "crv": {
+            "type": "string",
+            "enum": [
+              "Ed25519"
+            ]
+          },
+          "x": {
+            "type": "string",
+            "description": "Khóa công khai 32 byte, mã hóa base64url."
+          }
+        }
+      },
+      "VerificationMethod": {
+        "type": "object",
+        "required": [
+          "id",
+          "type",
+          "publicKeyJwk"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "DID URL đầy đủ hoặc tham chiếu tương đối như #key-1."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "JsonWebKey2020"
+            ]
+          },
+          "controller": {
+            "type": "string",
+            "description": "Mặc định là chính DID."
+          },
+          "publicKeyJwk": {
+            "$ref": "#/components/schemas/PublicKeyJwk"
+          }
+        }
+      },
+      "DidDocumentInput": {
+        "type": "object",
+        "required": [
+          "verificationMethod",
+          "authentication"
+        ],
+        "description": "DID Document chỉ chứa khóa công khai, thường lấy từ điểm cuối hỗ trợ GET /1.0/did-document. Ứng dụng gán id, đổi tham chiếu tương đối thành DID URL đầy đủ và bổ sung @context, controller nếu thiếu. Chỉ chấp nhận DID tự kiểm soát (controller là chính DID).",
+        "properties": {
+          "@context": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "id": {
+            "type": "string",
+            "description": "Có thể bỏ trống khi tạo DID; ứng dụng sẽ sinh did:cheqd:testnet:<uuid>."
+          },
+          "controller": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "verificationMethod": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VerificationMethod"
+            }
+          },
+          "authentication": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "assertionMethod": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": true
+      },
+      "CreateRequest": {
+        "type": "object",
+        "required": [
+          "didDocument"
+        ],
+        "properties": {
+          "jobId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Bỏ trống ở lần gọi thứ nhất."
+          },
+          "did": {
+            "type": "string",
+            "description": "DID do Client chỉ định (không bắt buộc)."
+          },
+          "options": {
+            "$ref": "#/components/schemas/RequestOptions"
+          },
+          "secret": {
+            "type": "object",
+            "description": "Để trống ở lần gọi thứ nhất."
+          },
+          "didDocument": {
+            "$ref": "#/components/schemas/DidDocumentInput"
+          }
+        }
+      },
+      "UpdateRequest": {
+        "type": "object",
+        "required": [
+          "did",
+          "didDocument"
+        ],
+        "properties": {
+          "did": {
+            "type": "string"
+          },
+          "options": {
+            "$ref": "#/components/schemas/RequestOptions"
+          },
+          "secret": {
+            "type": "object"
+          },
+          "didDocumentOperation": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "setDidDocument"
+              ]
+            },
+            "description": "Chỉ hỗ trợ [\"setDidDocument\"] (thay toàn bộ DID Document)."
+          },
+          "didDocument": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/DidDocumentInput"
+            },
+            "description": "Mảng gồm đúng một DID Document mới."
+          }
+        }
+      },
+      "DeactivateRequest": {
+        "type": "object",
+        "required": [
+          "did"
+        ],
+        "properties": {
+          "did": {
+            "type": "string"
+          },
+          "options": {
+            "$ref": "#/components/schemas/RequestOptions"
+          },
+          "secret": {
+            "type": "object"
+          }
+        },
+        "description": "Không được gửi didDocument."
+      },
+      "ContinueRequest": {
+        "type": "object",
+        "required": [
+          "jobId"
+        ],
+        "description": "Lần gọi thứ hai, gửi tới cùng điểm cuối với lần gọi thứ nhất. Nếu thiếu secret.signingResponse, ứng dụng trả lại yêu cầu ký hiện tại.",
+        "properties": {
+          "jobId": {
+            "type": "string"
+          },
+          "secret": {
+            "type": "object",
+            "properties": {
+              "signingResponse": {
+                "$ref": "#/components/schemas/SigningResponseSet"
+              }
+            }
+          }
+        }
+      },
+      "SigningRequest": {
+        "type": "object",
+        "properties": {
+          "payload": {
+            "type": "object",
+            "description": "Dữ liệu dạng JSON để Client đối chiếu (didDocument và versionId, hoặc id và versionId với thao tác vô hiệu hóa)."
+          },
+          "serializedPayload": {
+            "type": "string",
+            "format": "byte",
+            "description": "Chuỗi byte cần ký (mã hóa protobuf của did:cheqd), dạng base64."
+          },
+          "kid": {
+            "type": "string",
+            "description": "Khóa phải dùng để ký."
+          },
+          "alg": {
+            "type": "string",
+            "enum": [
+              "EdDSA"
+            ]
+          },
+          "purpose": {
+            "type": "string",
+            "enum": [
+              "authentication"
+            ]
+          }
+        }
+      },
+      "SigningResponse": {
+        "type": "object",
+        "required": [
+          "signature"
+        ],
+        "properties": {
+          "signature": {
+            "type": "string",
+            "format": "byte",
+            "description": "Chữ ký Ed25519 (64 byte) dạng base64."
+          },
+          "kid": {
+            "type": "string"
+          },
+          "alg": {
+            "type": "string",
+            "enum": [
+              "EdDSA"
+            ]
+          }
+        }
+      },
+      "SigningResponseSet": {
+        "type": "object",
+        "description": "Mỗi khóa signingRequestN của lần gọi thứ nhất cần một chữ ký cùng tên.",
+        "additionalProperties": {
+          "$ref": "#/components/schemas/SigningResponse"
+        }
+      },
+      "DidState": {
+        "type": "object",
+        "required": [
+          "state"
+        ],
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "action",
+              "wait",
+              "finished",
+              "failed"
+            ]
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "signPayload"
+            ]
+          },
+          "did": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string"
+          },
+          "signingRequest": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/SigningRequest"
+            }
+          },
+          "wait": {
+            "type": "string"
+          },
+          "waitTime": {
+            "type": "integer",
+            "description": "Thời gian nên chờ trước khi gọi lại (mili giây)."
+          },
+          "reason": {
+            "type": "string"
+          },
+          "didDocument": {
+            "type": "object"
+          }
+        }
+      },
+      "RegistrationMetadata": {
+        "type": "object",
+        "properties": {
+          "method": {
+            "type": "string"
+          },
+          "network": {
+            "type": "string"
+          },
+          "operation": {
+            "type": "string",
+            "enum": [
+              "create",
+              "update",
+              "deactivate"
+            ]
+          },
+          "operationId": {
+            "type": "string"
+          },
+          "versionId": {
+            "type": "string"
+          },
+          "txHash": {
+            "type": "string"
+          },
+          "height": {
+            "type": "integer"
+          },
+          "durationMs": {
+            "type": "integer"
+          },
+          "error": {
+            "type": "string"
+          },
+          "errorMessage": {
+            "type": "string"
+          },
+          "ledgerCode": {
+            "type": "integer"
+          }
+        }
+      },
+      "RegistrarResponse": {
+        "type": "object",
+        "properties": {
+          "jobId": {
+            "type": "string",
+            "nullable": true
+          },
+          "didState": {
+            "$ref": "#/components/schemas/DidState"
+          },
+          "didRegistrationMetadata": {
+            "$ref": "#/components/schemas/RegistrationMetadata"
+          },
+          "didDocumentMetadata": {
+            "type": "object"
+          }
+        }
+      },
+      "OperationResult": {
+        "type": "object",
+        "properties": {
+          "operationId": {
+            "type": "string"
+          },
+          "operationType": {
+            "type": "string",
+            "enum": [
+              "CREATE",
+              "UPDATE",
+              "DEACTIVATE"
+            ]
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "AWAITING_SIGNATURE",
+              "SUBMITTING",
+              "COMPLETED",
+              "FAILED"
+            ]
+          },
+          "did": {
+            "type": "string"
+          },
+          "txHash": {
+            "type": "string",
+            "nullable": true
+          },
+          "txHeight": {
+            "type": "integer",
+            "nullable": true
+          },
+          "ledgerCode": {
+            "type": "integer",
+            "nullable": true
+          },
+          "errorMessage": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "RegistrarProperties": {
+        "type": "object",
+        "description": "Thông tin cấu hình của Registrar theo từng DID Method."
+      }
+    }
+  }
+}

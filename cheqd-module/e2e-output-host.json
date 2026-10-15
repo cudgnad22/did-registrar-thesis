@@ -1,0 +1,199 @@
+{
+  "create": {
+    "prepare": {
+      "status": 200,
+      "body": {
+        "operation": "create",
+        "did": "did:cheqd:testnet:49321806-bc45-4599-9133-7298a81592e2",
+        "versionId": "3adaeb7c-7baa-4c37-8ec1-36c3dc74477a",
+        "signBytes": "ChxodHRwczovL3d3dy53My5vcmcvbnMvZGlkL3YxEjZkaWQ6Y2hlcWQ6dGVzdG5ldDo0OTMyMTgwNi1iYzQ1LTQ1OTktOTEzMy03Mjk4YTgxNTkyZTIaNmRpZDpjaGVxZDp0ZXN0bmV0OjQ5MzIxODA2LWJjNDUtNDU5OS05MTMzLTcyOThhODE1OTJlMiLXAQo8ZGlkOmNoZXFkOnRlc3RuZXQ6NDkzMjE4MDYtYmM0NS00NTk5LTkxMzMtNzI5OGE4MTU5MmUyI2tleS0xEg5Kc29uV2ViS2V5MjAyMBo2ZGlkOmNoZXFkOnRlc3RuZXQ6NDkzMjE4MDYtYmM0NS00NTk5LTkxMzMtNzI5OGE4MTU5MmUyIk97Imt0eSI6Ik9LUCIsImNydiI6IkVkMjU1MTkiLCJ4IjoiMHYyT1R2RjZyQzF5aTlodmMzOXJzX0Y3MjQ1ME5EWUl2RDhUSmdMLVFXSSJ9KjxkaWQ6Y2hlcWQ6dGVzdG5ldDo0OTMyMTgwNi1iYzQ1LTQ1OTktOTEzMy03Mjk4YTgxNTkyZTIja2V5LTFiJDNhZGFlYjdjLTdiYWEtNGMzNy04ZWMxLTM2YzNkYzc0NDc3YQ==",
+        "requiredSigners": [
+          "did:cheqd:testnet:49321806-bc45-4599-9133-7298a81592e2#key-1"
+        ],
+        "currentVersionId": null
+      }
+    },
+    "submit": {
+      "status": 200,
+      "body": {
+        "success": true,
+        "code": 0,
+        "txHash": "502865DBE363E729BBAB82B35A7FE311BE0E3079D66F63EF2A8B53A344BB1BC5",
+        "height": 277901,
+        "rawLog": "",
+        "elapsedMs": 3125,
+        "didDocument": {
+          "@context": [
+            "https://www.w3.org/ns/did/v1",
+            "https://w3id.org/security/suites/jws-2020/v1"
+          ],
+          "id": "did:cheqd:testnet:49321806-bc45-4599-9133-7298a81592e2",
+          "controller": [
+            "did:cheqd:testnet:49321806-bc45-4599-9133-7298a81592e2"
+          ],
+          "verificationMethod": [
+            {
+              "id": "did:cheqd:testnet:49321806-bc45-4599-9133-7298a81592e2#key-1",
+              "type": "JsonWebKey2020",
+              "controller": "did:cheqd:testnet:49321806-bc45-4599-9133-7298a81592e2",
+              "publicKeyJwk": {
+                "kty": "OKP",
+                "crv": "Ed25519",
+                "x": "0v2OTvF6rC1yi9hvc39rs_F72450NDYIvD8TJgL-QWI"
+              }
+            }
+          ],
+          "authentication": [
+            "did:cheqd:testnet:49321806-bc45-4599-9133-7298a81592e2#key-1"
+          ]
+        },
+        "didDocumentMetadata": {
+          "created": "2026-09-25T04:15:58.433Z",
+          "deactivated": false,
+          "versionId": "3adaeb7c-7baa-4c37-8ec1-36c3dc74477a",
+          "nextVersionId": "",
+          "previousVersionId": ""
+        }
+      }
+    }
+  },
+  "wrongSignature": {
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "SIGNATURE_INVALID",
+        "message": "Chữ ký của did:cheqd:testnet:49321806-bc45-4599-9133-7298a81592e2#key-2 không hợp lệ"
+      }
+    }
+  },
+  "update": {
+    "prepare": {
+      "status": 200,
+      "body": {
+        "operation": "update",
+        "did": "did:cheqd:testnet:49321806-bc45-4599-9133-7298a81592e2",
+        "versionId": "dc3fe512-5953-45f0-bd8e-923f2c10c22e",
+        "signBytes": "ChxodHRwczovL3d3dy53My5vcmcvbnMvZGlkL3YxEjZkaWQ6Y2hlcWQ6dGVzdG5ldDo0OTMyMTgwNi1iYzQ1LTQ1OTktOTEzMy03Mjk4YTgxNTkyZTIaNmRpZDpjaGVxZDp0ZXN0bmV0OjQ5MzIxODA2LWJjNDUtNDU5OS05MTMzLTcyOThhODE1OTJlMiLXAQo8ZGlkOmNoZXFkOnRlc3RuZXQ6NDkzMjE4MDYtYmM0NS00NTk5LTkxMzMtNzI5OGE4MTU5MmUyI2tleS0yEg5Kc29uV2ViS2V5MjAyMBo2ZGlkOmNoZXFkOnRlc3RuZXQ6NDkzMjE4MDYtYmM0NS00NTk5LTkxMzMtNzI5OGE4MTU5MmUyIk97Imt0eSI6Ik9LUCIsImNydiI6IkVkMjU1MTkiLCJ4IjoiZjJ1T3RmMDdKbEJ1Z1ljQUlLX1ZpT1Z2ZkoxaW1pSUZhdXJVZllMUTJrVSJ9KjxkaWQ6Y2hlcWQ6dGVzdG5ldDo0OTMyMTgwNi1iYzQ1LTQ1OTktOTEzMy03Mjk4YTgxNTkyZTIja2V5LTJiJGRjM2ZlNTEyLTU5NTMtNDVmMC1iZDhlLTkyM2YyYzEwYzIyZQ==",
+        "requiredSigners": [
+          "did:cheqd:testnet:49321806-bc45-4599-9133-7298a81592e2#key-2",
+          "did:cheqd:testnet:49321806-bc45-4599-9133-7298a81592e2#key-1"
+        ],
+        "currentVersionId": "3adaeb7c-7baa-4c37-8ec1-36c3dc74477a"
+      }
+    },
+    "submit": {
+      "status": 200,
+      "body": {
+        "success": true,
+        "code": 0,
+        "txHash": "439E7295B1434F348FDE4BB6F6BBDE5894268BDABD66BC4768790AE10E35C214",
+        "height": 277903,
+        "rawLog": "",
+        "elapsedMs": 3074,
+        "didDocument": {
+          "@context": [
+            "https://www.w3.org/ns/did/v1",
+            "https://w3id.org/security/suites/jws-2020/v1"
+          ],
+          "id": "did:cheqd:testnet:49321806-bc45-4599-9133-7298a81592e2",
+          "controller": [
+            "did:cheqd:testnet:49321806-bc45-4599-9133-7298a81592e2"
+          ],
+          "verificationMethod": [
+            {
+              "id": "did:cheqd:testnet:49321806-bc45-4599-9133-7298a81592e2#key-2",
+              "type": "JsonWebKey2020",
+              "controller": "did:cheqd:testnet:49321806-bc45-4599-9133-7298a81592e2",
+              "publicKeyJwk": {
+                "kty": "OKP",
+                "crv": "Ed25519",
+                "x": "f2uOtf07JlBugYcAIK_ViOVvfJ1imiIFaurUfYLQ2kU"
+              }
+            }
+          ],
+          "authentication": [
+            "did:cheqd:testnet:49321806-bc45-4599-9133-7298a81592e2#key-2"
+          ]
+        },
+        "didDocumentMetadata": {
+          "created": "2026-09-25T04:15:58.433Z",
+          "updated": "2026-09-25T04:16:01.301Z",
+          "deactivated": false,
+          "versionId": "dc3fe512-5953-45f0-bd8e-923f2c10c22e",
+          "nextVersionId": "",
+          "previousVersionId": "3adaeb7c-7baa-4c37-8ec1-36c3dc74477a"
+        }
+      }
+    }
+  },
+  "deactivate": {
+    "prepare": {
+      "status": 200,
+      "body": {
+        "operation": "deactivate",
+        "did": "did:cheqd:testnet:49321806-bc45-4599-9133-7298a81592e2",
+        "versionId": "6d9c31d5-0cdd-4c0c-a91d-9bedb1d62099",
+        "signBytes": "CjZkaWQ6Y2hlcWQ6dGVzdG5ldDo0OTMyMTgwNi1iYzQ1LTQ1OTktOTEzMy03Mjk4YTgxNTkyZTISJDZkOWMzMWQ1LTBjZGQtNGMwYy1hOTFkLTliZWRiMWQ2MjA5OQ==",
+        "requiredSigners": [
+          "did:cheqd:testnet:49321806-bc45-4599-9133-7298a81592e2#key-2"
+        ],
+        "currentVersionId": "dc3fe512-5953-45f0-bd8e-923f2c10c22e"
+      }
+    },
+    "submit": {
+      "status": 200,
+      "body": {
+        "success": true,
+        "code": 0,
+        "txHash": "BE79372A80BFDFAA7D6D643A3FE2BEABA7ACA6CB8DBB311CF5F8828C218A0485",
+        "height": 277906,
+        "rawLog": "",
+        "elapsedMs": 3053,
+        "didDocument": {
+          "@context": [
+            "https://www.w3.org/ns/did/v1",
+            "https://w3id.org/security/suites/jws-2020/v1"
+          ],
+          "id": "did:cheqd:testnet:49321806-bc45-4599-9133-7298a81592e2",
+          "controller": [
+            "did:cheqd:testnet:49321806-bc45-4599-9133-7298a81592e2"
+          ],
+          "verificationMethod": [
+            {
+              "id": "did:cheqd:testnet:49321806-bc45-4599-9133-7298a81592e2#key-2",
+              "type": "JsonWebKey2020",
+              "controller": "did:cheqd:testnet:49321806-bc45-4599-9133-7298a81592e2",
+              "publicKeyJwk": {
+                "kty": "OKP",
+                "crv": "Ed25519",
+                "x": "f2uOtf07JlBugYcAIK_ViOVvfJ1imiIFaurUfYLQ2kU"
+              }
+            }
+          ],
+          "authentication": [
+            "did:cheqd:testnet:49321806-bc45-4599-9133-7298a81592e2#key-2"
+          ]
+        },
+        "didDocumentMetadata": {
+          "created": "2026-09-25T04:15:58.433Z",
+          "updated": "2026-09-25T04:16:05.247Z",
+          "deactivated": true,
+          "versionId": "6d9c31d5-0cdd-4c0c-a91d-9bedb1d62099",
+          "nextVersionId": "",
+          "previousVersionId": "dc3fe512-5953-45f0-bd8e-923f2c10c22e"
+        }
+      }
+    }
+  },
+  "updateAfterDeactivate": {
+    "prepare": {
+      "status": 409,
+      "body": {
+        "error": {
+          "code": "DID_DEACTIVATED",
+          "message": "did:cheqd:testnet:49321806-bc45-4599-9133-7298a81592e2 đã bị vô hiệu hóa"
+        }
+      }
+    }
+  }
+}

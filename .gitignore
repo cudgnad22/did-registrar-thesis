@@ -1,0 +1,37 @@
+# --- không đưa lên: mã của bên thứ ba, thử nghiệm, dữ liệu mạng (37G)
+/infra/
+
+# --- bản sao lưu cũ của mã Java
+/did-registration/src/main - Copy/
+/did-registration/src/main_old/
+/did-registration/src/main_old_1/
+
+# --- build / phụ thuộc
+node_modules/
+target/
+dist/
+build/
+.idea/
+*.iml
+.vscode/
+*.log
+*.bak
+*.bak-*
+
+# --- BÍ MẬT
+.env
+.env.*
+*.env
+!.env.example
+!/infra-localnet/prebuilt.env
+wallet*.json
+.did-cli/
+*.pem
+*.key
+priv_validator_key.json
+node_key.json
+keyring-*/
+
+# bản sao lưu cơ sở dữ liệu
+*.dump
+*.sql.gz
