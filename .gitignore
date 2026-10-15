@@ -38,3 +38,4 @@ keyring-*/
 
 # kết quả chạy thử
 *e2e-output*.json
+/did-cli/demo/
