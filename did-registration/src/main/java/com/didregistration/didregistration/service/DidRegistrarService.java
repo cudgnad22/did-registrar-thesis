@@ -117,6 +117,7 @@ public class DidRegistrarService {
 
         Map<String, Object> didDocument = validator.normalize(castMap(value), did);
         validator.validate(didDocument, did);
+        rejectUnchanged(did, didDocument);
 
         PrepareResponse prepared = prepare("update", did, didDocument);
         DidOperationEntity op = saveOperation(OperationType.UPDATE, did, null, didDocument, prepared);
@@ -415,6 +416,25 @@ public class DidRegistrarService {
         });
         if (didOperationRepository.existsByTargetDidAndState(did, DidOperationState.SUBMITTING)) {
             throw new DifException(400, "operationInProgress", "DID đang có giao dịch chờ mạng xác nhận", did);
+        }
+    }
+
+    /**
+     * Update gồm hai kiểu: thay khóa, hoặc sửa service mà giữ nguyên khóa. Cả hai đều phải làm DID Document
+     * khác bản hiện hành; gửi lại y nguyên bản cũ chỉ tốn phí giao dịch nên bị từ chối ngay.
+     * Không đọc được mạng thì bỏ qua bước này: lần gọi prepare ngay sau sẽ báo lỗi cụ thể.
+     */
+    private void rejectUnchanged(String did, Map<String, Object> didDocument) {
+        JsonNode current;
+        try {
+            JsonNode resolved = cheqdModuleClient.resolve(did);
+            current = resolved == null ? null : resolved.get("didDocument");
+        } catch (CheqdModuleException e) {
+            return;
+        }
+        if (current != null && current.equals(objectMapper.valueToTree(didDocument))) {
+            throw new DifException(400, "noChange",
+                    "DID Document mới giống hệt bản hiện hành trên mạng, không có gì để cập nhật", did);
         }
     }
 

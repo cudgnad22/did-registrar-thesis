@@ -14,7 +14,6 @@
     <div class="navbar-nav flex-row gap-3">
       <a class="nav-link" href="/ui/create">Giao diện</a>
       <a class="nav-link active" href="/dids">Danh sách DID</a>
-      <a class="nav-link" href="/api-docs/index.html">Tài liệu API</a>
     </div>
   </div>
 </nav>
@@ -30,8 +29,7 @@
     <div><code>POST /1.0/deactivate</code> vô hiệu hóa DID</div>
     <div class="small mt-1">Mỗi thao tác gọi hai lần cùng điểm cuối: lần đầu nhận yêu cầu ký và <code>jobId</code>,
       lần sau gửi <code>jobId</code> kèm <code>secret.signingResponse</code>.</div>
-    <div class="small mt-1">Xem đặc tả và gọi thử ở <a href="/api-docs/index.html">Tài liệu API</a>;
-      thực hiện ba thao tác ở trang <a href="/ui/create">Giao diện</a>, việc ký do bộ ký phía Client (did-cli agent) đảm nhận.</div>
+    <div class="small mt-1">Thực hiện ba thao tác ở trang <a href="/ui/create">Giao diện</a>, việc ký do người dùng thực hiện thủ công bằng bộ ký phía Client (did-cli sign).</div>
   </div>
 
   <div class="card shadow-sm">

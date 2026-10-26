@@ -6,7 +6,7 @@ import { randomUUID } from 'node:crypto';
 import { ModuleError, Operation } from './config.js';
 import { queryDid, broadcast } from './cheqd-client.js';
 import { buildDocSignBytes, buildDeactivateSignBytes } from './payload.js';
-import { requiredSigners, verifySignatures } from './signers.js';
+import { requiredSigners, verifySignatures, assertKeysReadable, findPublicJwk } from './signers.js';
 
 const b64 = (u: Uint8Array) => Buffer.from(u).toString('base64');
 
@@ -49,13 +49,13 @@ async function signBytesFor(req: PrepareRequest, versionId: string): Promise<Uin
 /** Bước 1: tạo dữ liệu cần ký và danh sách khóa phải ký */
 export async function prepare(req: PrepareRequest) {
   const { currentDoc } = await loadContext(req);
+  if (req.operation !== 'deactivate') assertKeysReadable(req.didDocument);
   const versionId = randomUUID();
   const signBytes = await signBytesFor(req, versionId);
-  return {
-    versionId,
-    signBytes: b64(signBytes),
-    requiredSigners: requiredSigners(req.operation, req.didDocument, currentDoc),
-  };
+  const signers = requiredSigners(req.operation, req.didDocument, currentDoc);
+  // Kiểm tra sớm: mọi khóa phải ký (kể cả khóa của bản hiện hành) đều đọc được, để Client không ký vô ích
+  for (const id of signers) findPublicJwk(id, req.didDocument, currentDoc);
+  return { versionId, signBytes: b64(signBytes), requiredSigners: signers };
 }
 
 /** Bước 2: dựng lại dữ liệu cần ký, kiểm tra chữ ký, gửi giao dịch */

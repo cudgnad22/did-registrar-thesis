@@ -1,7 +1,7 @@
 /**
  * Bộ ký chỉ gọi Registrar để ĐỌC: tra cứu DID Document hiện hành và trạng thái thao tác,
  * phục vụ việc đối chiếu kho khóa với mạng. Các lần gọi create/update/deactivate do giao diện
- * của Registrar (hoặc người dùng qua Swagger UI) thực hiện.
+ * của Registrar thực hiện.
  */
 export const API_URL = process.env.DID_API_URL ?? 'http://localhost:8085';
 

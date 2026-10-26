@@ -2,6 +2,7 @@
 // Cùng hợp đồng với DidRegistrarService/DifExceptionHandler/DidRestController; "mạng" là bộ nhớ.
 // MODE=evil: chèn khóa lạ #key-99 vào DID Document (Client phải từ chối ký).
 // MODE=wait: lần gọi thứ hai trả state=wait, giao dịch hoàn tất sau 4 giây.
+// MODE=evilsvc: lén thêm service #evil vào DID Document khi cập nhật (Client phải thấy và từ chối).
 import http from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { join, extname, normalize } from 'node:path';
@@ -22,20 +23,48 @@ const failed = (status, reason, description, did = null) => ({ status, body: { j
 class DifErr extends Error { constructor(status, reason, msg, did) { super(msg); Object.assign(this, { status, reason, did }); } }
 const authIds = (d) => (d?.authentication ?? []).map((a) => (typeof a === 'string' ? a : a.id));
 const abs = (id, did) => (id.startsWith('#') ? did + id : id);
+// Khóa Ed25519: JsonWebKey2020 (publicKeyJwk) hoặc Ed25519VerificationKey2020 (publicKeyMultibase), giống signers.ts của module
+const B58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+function b58decode(s) { let n = 0n; for (const c of s) { const i = B58.indexOf(c); if (i < 0) return null; n = n * 58n + BigInt(i); } let h = n === 0n ? '' : n.toString(16); if (h.length % 2) h = '0' + h; return Buffer.concat([Buffer.alloc(s.match(/^1*/)[0].length), Buffer.from(h, 'hex')]); }
+function keyJwk(vm) {
+  if (vm?.type === 'JsonWebKey2020' && vm.publicKeyJwk?.crv === 'Ed25519' && Buffer.from(vm.publicKeyJwk.x ?? '', 'base64url').length === 32) return { kty: 'OKP', crv: 'Ed25519', x: vm.publicKeyJwk.x };
+  if (vm?.type === 'Ed25519VerificationKey2020' && String(vm.publicKeyMultibase ?? '').startsWith('z')) {
+    const b = b58decode(vm.publicKeyMultibase.slice(1)); if (b && b.length === 34 && b[0] === 0xed && b[1] === 1) return { kty: 'OKP', crv: 'Ed25519', x: b.subarray(2).toString('base64url') };
+  }
+  return null;
+}
 
 function normalizeDoc(input, did) {
   if (input.id && input.id !== did) throw new DifErr(400, 'invalidDidDocument', `didDocument.id (${input.id}) không trùng với DID ${did}`, did);
   const doc = { '@context': input['@context'] ?? ['https://www.w3.org/ns/did/v1'], id: did, controller: input.controller ?? [did] };
   doc.verificationMethod = (input.verificationMethod ?? []).map((vm) => ({ ...vm, id: abs(vm.id, did), controller: vm.controller ?? did }));
   for (const rel of ['authentication', 'assertionMethod']) if (input[rel]) doc[rel] = input[rel].map((r) => abs(r, did));
+  if (Array.isArray(input.service) && input.service.length) {
+    doc.service = input.service.map((s) => ({ ...s, id: abs(String(s.id ?? ''), did) }));
+    const seen = new Set();
+    for (const s of doc.service) {
+      if (!s.id.startsWith(did + '#') || !/^[A-Za-z0-9._~-]+$/.test(s.id.slice(did.length + 1))) throw new DifErr(400, 'invalidDidDocument', `id của service phải có dạng ${did}#<tên>, nhận được: ${s.id}`, did);
+      if (seen.has(s.id)) throw new DifErr(400, 'invalidDidDocument', 'Trùng id service: ' + s.id, did);
+      seen.add(s.id);
+      if (!s.type) throw new DifErr(400, 'invalidDidDocument', s.id + '.type là bắt buộc', did);
+      if (![].concat(s.serviceEndpoint ?? []).length) throw new DifErr(400, 'invalidDidDocument', s.id + '.serviceEndpoint là bắt buộc', did);
+    }
+  }
+  if (Array.isArray(input.alsoKnownAs) && input.alsoKnownAs.length) doc.alsoKnownAs = input.alsoKnownAs;
   if (MODE === 'evil') {
     doc.verificationMethod.push({ id: did + '#key-99', type: 'JsonWebKey2020', controller: did, publicKeyJwk: { kty: 'OKP', crv: 'Ed25519', x: 'ATTACKERKEYxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx' } });
     doc.authentication.push(did + '#key-99');
   }
   if (!doc.authentication?.length) throw new DifErr(400, 'invalidDidDocument', 'authentication là bắt buộc', did);
-  for (const vm of doc.verificationMethod) if (vm.publicKeyJwk?.d) throw new DifErr(400, 'invalidDidDocument', 'Không được gửi private key', did);
+  for (const vm of doc.verificationMethod) if (vm.publicKeyJwk?.d || vm.privateKeyMultibase) throw new DifErr(400, 'privateKeyNotAllowed', 'Không được gửi private key', did);
+  for (const vm of doc.verificationMethod) {   // giống DidDocumentValidator
+    if (!['JsonWebKey2020', 'Ed25519VerificationKey2020'].includes(vm.type)) throw new DifErr(400, 'unsupportedVerificationMethod', `${vm.id}: chỉ hỗ trợ kiểu JsonWebKey2020 hoặc Ed25519VerificationKey2020`, did);
+    if (!keyJwk(vm) && !(MODE === 'evil' && vm.id.endsWith('#key-99'))) throw new DifErr(400, 'invalidDidDocument', `${vm.id}: khóa Ed25519 không hợp lệ`, did);
+  }
   return doc;
 }
+
+const canon = (v) => JSON.stringify(v, (k, x) => (x && typeof x === 'object' && !Array.isArray(x) ? Object.fromEntries(Object.keys(x).sort().map((y) => [y, x[y]])) : x));
 
 function requiredSigners(op, newDoc, cur) {
   if (op === 'create') return [...new Set(authIds(newDoc))];
@@ -104,7 +133,7 @@ function continueJob(req, type) {
     if (r.kid && r.kid !== kid) return action(op, 400, 'kidMismatch', `signingRequest${i}: kid phải là ${kid}`);
     const vm = [...(op.doc?.verificationMethod ?? []), ...(cur?.verificationMethod ?? [])].find((v) => v.id === kid);
     let ok = false;
-    try { const { kty, crv, x } = vm.publicKeyJwk; ok = verify(null, op.bytes, createPublicKey({ key: { kty, crv, x }, format: 'jwk' }), Buffer.from(r.signature, 'base64')); } catch { ok = false; }
+    try { ok = verify(null, op.bytes, createPublicKey({ key: keyJwk(vm), format: 'jwk' }), Buffer.from(r.signature, 'base64')); } catch { ok = false; }
     if (!ok) return action(op, 400, 'signatureInvalid', `Chữ ký của ${kid} không hợp lệ`);
   }
   if (MODE === 'wait') { op.state = 'SUBMITTING'; setTimeout(() => commit(op), 4000); return { status: 200, body: { jobId: op.id, didState: { state: 'wait', did: op.did, wait: 'Giao dịch đang được gửi lên mạng cheqd, hãy gọi lại sau', waitTime: 3000 }, didRegistrationMetadata: meta(op), didDocumentMetadata: {} } }; }
@@ -128,7 +157,12 @@ function registrar(path, url, req) {
   if (!req.did) throw new DifErr(400, 'invalidRequest', 'did là bắt buộc');
   if (type === 'update') {
     const doc = Array.isArray(req.didDocument) ? req.didDocument[0] : req.didDocument;
-    return prepare('update', req.did, normalizeDoc(doc, req.did));
+    const next = normalizeDoc(doc, req.did);
+    const cur = ledger.get(req.did)?.didDocument;
+    // giống DidRegistrarService.rejectUnchanged
+    if (cur && canon(cur) === canon(next)) throw new DifErr(400, 'noChange', 'DID Document mới giống hệt bản hiện hành trên mạng, không có gì để cập nhật', req.did);
+    if (MODE === 'evilsvc') (next.service = next.service ?? []).push({ id: req.did + '#evil', type: 'LinkedDomains', serviceEndpoint: ['https://attacker.example'] });
+    return prepare('update', req.did, next);
   }
   if (req.didDocument) throw new DifErr(400, 'invalidRequest', 'deactivate: không được gửi didDocument', req.did);
   return prepare('deactivate', req.did, null);
@@ -144,18 +178,20 @@ function template(url) {
     if (j.d) return [400, { error: { code: 'PRIVATE_KEY_NOT_ALLOWED', message: 'publicKeyJwk chứa khóa bí mật (trường d)' } }];
     if (j.kty !== 'OKP' || j.crv !== 'Ed25519' || Buffer.from(j.x || '', 'base64url').length !== 32) return [400, { error: { code: 'INVALID_PUBLIC_KEY', message: 'Chỉ hỗ trợ khóa Ed25519' } }];
     x = j.x; }
-  let did, idx = 1, replacedKeys;
+  let did, idx = 1, replacedKeys, kept;
   if (did0) {
     const cur = ledger.get(did0);
     if (!cur) return [404, { error: { code: 'DID_NOT_FOUND', message: `${did0} không tồn tại` } }];
     if (cur.didDocumentMetadata.deactivated) return [409, { error: { code: 'DID_DEACTIVATED', message: `${did0} đã bị vô hiệu hóa` } }];
     const nums = (cur.didDocument.verificationMethod || []).map((v) => Number((v.id.match(/#key-(\d+)$/) || [])[1] || 0));
-    idx = Math.max(0, ...nums) + 1; did = did0; replacedKeys = authIds(cur.didDocument);
+    idx = Math.max(0, ...nums) + 1; did = did0; replacedKeys = authIds(cur.didDocument); kept = cur.didDocument;
   } else did = PREFIX + randomUUID();
   const kid = `${did}#key-${idx}`;
   const didDocument = { '@context': ['https://www.w3.org/ns/did/v1'], id: did, controller: [did],
     verificationMethod: [{ id: kid, type: 'JsonWebKey2020', controller: did, publicKeyJwk: { kty: 'OKP', crv: 'Ed25519', x } }],
     authentication: [kid], assertionMethod: [kid] };
+  if (kept?.service?.length) didDocument.service = kept.service;        // giống DidDocumentTemplateService: thay khóa giữ service
+  if (kept?.alsoKnownAs?.length) didDocument.alsoKnownAs = kept.alsoKnownAs;
   return [200, { operation: did0 ? 'update' : 'create', did, keyId: kid, ...(replacedKeys ? { replacedKeys } : {}), didDocument }];
 }
 
@@ -188,6 +224,14 @@ http.createServer(async (req, res) => {
     }
     if (p === '/1.0/methods') return json(res, 200, ['cheqd']);
     if (p === '/1.0/properties') return json(res, 200, { cheqd: { network: ['testnet'], didFormat: 'did:cheqd:testnet:<uuid>', secretModes: ['clientSecretMode'], operations: ['create', 'update', 'deactivate'], didDocumentOperations: ['setDidDocument'], verificationMethodTypes: ['JsonWebKey2020'], keyTypes: ['Ed25519'], signingAlgorithm: 'EdDSA' } });
+    const dm = p.match(/^\/api\/v1\/dids\/(.+)\/details$/);
+    if (req.method === 'GET' && dm) {   // giống DidRestController.details
+      const did = decodeURIComponent(dm[1]); const r = ledger.get(did) ?? null;
+      const operations = [...ops.values()].filter((o) => o.did === did).map((o) => ({ operationType: o.type.toUpperCase(), state: o.state, txHash: o.txHash ?? null, txHeight: o.txHeight ?? null, ledgerCode: null, createdAt: o.createdAt, updatedAt: o.updatedAt ?? null }));
+      const app = labels.has(did) ? { label: labels.get(did), status: r?.didDocumentMetadata.deactivated ? 'DEACTIVATED' : 'ACTIVE', createdAt: r?.didDocumentMetadata.created, updatedAt: r?.didDocumentMetadata.updated ?? null } : null;
+      if (!r && !app && !operations.length) return json(res, 404, { error: { code: 'NOT_FOUND', message: 'Không tìm thấy DID trên mạng cheqd và trong ứng dụng: ' + did } });
+      return json(res, 200, { did, ledger: r, app, owner: owners.get(did) ?? null, operations });
+    }
     if (p.startsWith('/api/v1/dids/')) {
       const r = ledger.get(decodeURIComponent(p.slice('/api/v1/dids/'.length)));
       return r ? json(res, 200, r) : json(res, 404, { error: { code: 'DID_NOT_FOUND', message: 'DID không tồn tại' } });
@@ -197,7 +241,7 @@ http.createServer(async (req, res) => {
       if (!op) return json(res, 404, { error: { code: 'NOT_FOUND', message: 'Không tìm thấy thao tác' } });
       return json(res, 200, { operationId: op.id, operationType: op.type.toUpperCase(), state: op.state, did: op.did, txHash: op.txHash ?? null, txHeight: op.txHeight ?? null, ledgerCode: null, errorMessage: null, createdAt: op.createdAt, updatedAt: op.updatedAt ?? op.createdAt });
     }
-    if (p === '/' || p === '/api-docs' || p === '/api-docs/') { res.writeHead(302, { Location: '/api-docs/index.html' }); return res.end(); }
+    if (p === '/') { res.writeHead(302, { Location: '/ui/create' }); return res.end(); }
     if (p === '/ui' || p === '/ui/') { res.writeHead(302, { Location: '/ui/create' }); return res.end(); }
     if (/^\/ui\/(create|update|deactivate|dids)\/?$/.test(p)) {   // giống forward:/ui/index.html của WebUiController
       const html = await readFile(join(STATIC, 'ui', 'index.html'));

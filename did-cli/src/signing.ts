@@ -1,6 +1,6 @@
 /**
  * Phân tích yêu cầu ký do Registrar trả về, đối chiếu với kho khóa, và ký.
- * Dùng chung cho lệnh `sign` (dòng lệnh) và cho agent ký (HTTP).
+ * Dùng cho lệnh `sign` và `sync` của dòng lệnh.
  *
  * Bộ ký KHÔNG tin thông tin do Registrar hay trang web khai: loại thao tác, DID và danh sách khóa
  * dự kiến đều được suy ra từ nội dung cần ký và từ kho khóa của chính Client.
@@ -9,7 +9,9 @@ import { Wallet, frag } from './wallet.ts';
 import type { StoredKey } from './wallet.ts';
 import { signerFor } from './signer.ts';
 import { createPublicKey, verify } from 'node:crypto';
-import { checkDidDocument, checkRequiredSigners, checkPayloadContains } from './verify.ts';
+import { checkDidDocument, checkRequiredSigners, checkPayloadContains, diffServices, normServices } from './verify.ts';
+import type { ServiceDiff } from './verify.ts';
+import { keyX, keyMaterial } from './keys.ts';
 
 export type Operation = 'create' | 'update' | 'deactivate';
 
@@ -21,6 +23,8 @@ export interface Analysis {
   did: string;
   operation: Operation | null;
   endpoint: string | null;
+  /** Kiểu cập nhật: thay khóa, hoặc sửa service giữ nguyên khóa */
+  updateKind?: 'key' | 'service';
   newKey?: StoredKey;
   newKid?: string;
   expectedSigners: string[];
@@ -50,7 +54,36 @@ export async function refreshFromLedger(response: any, wallet: Wallet, resolve: 
   catch (e: any) { return e?.message ?? String(e); }
 }
 
-export function analyze(response: any, wallet: Wallet, keyRef?: string, syncError?: string | null): Analysis {
+/** DID trong dữ liệu cần ký (create/update: didDocument.id; deactivate: id) */
+function didOf(response: any): string | undefined {
+  const payload = (Object.values(response?.didState?.signingRequest ?? {})[0] as any)?.payload ?? {};
+  return payload?.didDocument?.id ?? payload?.id;
+}
+
+/**
+ * DID Document hiện hành trên mạng (qua Registrar), để đối chiếu những gì bản mới thay đổi.
+ * Trả về null nếu DID chưa có trên mạng (tạo DID) hoặc không đọc được.
+ */
+export async function readCurrentDoc(response: any, resolve: (did: string) => Promise<any>): Promise<any | null> {
+  const did = didOf(response);
+  if (!did) return null;
+  try { return (await resolve(did))?.didDocument ?? null; }
+  catch { return null; }
+}
+
+const authOf = (doc: any): string[] => (doc?.authentication ?? []).map((a: any) => (typeof a === 'string' ? a : a.id));
+const keySig = (doc: any): string[] => (doc?.verificationMethod ?? []).map((vm: any) => `${vm?.id}|${keyX(vm)}`);
+const eps = (s: any) => (s?.serviceEndpoint ?? []).join(', ');
+
+function describeServiceDiff(d: ServiceDiff): string[] {
+  return [
+    ...d.added.map((s) => `+ Thêm service ${frag(s.id)} (${s.type}): ${eps(s)}`),
+    ...d.changed.map(({ before, after }) => `~ Sửa service ${frag(after.id)}: ${before.type === after.type ? '' : `${before.type} -> ${after.type}; `}${eps(before)} -> ${eps(after)}`),
+    ...d.removed.map((s) => `- Gỡ service ${frag(s.id)} (${s.type}): ${eps(s)}`),
+  ];
+}
+
+export function analyze(response: any, wallet: Wallet, keyRef?: string, syncError?: string | null, currentDoc: any = null): Analysis {
   const st = response?.didState;
   const fail = (msg: string): Analysis => ({
     ok: false, jobId: response?.jobId ?? '', did: st?.did ?? '', operation: null, endpoint: null,
@@ -70,6 +103,8 @@ export function analyze(response: any, wallet: Wallet, keyRef?: string, syncErro
   let operation: Operation;
   let newKey: StoredKey | undefined;
   let newKid: string | undefined;
+  let updateKind: 'key' | 'service' | undefined;
+  let serviceDiff: ServiceDiff | null = null;
   let expectedSigners: string[];
   let expectedX: string[] | null = null;
 
@@ -77,32 +112,50 @@ export function analyze(response: any, wallet: Wallet, keyRef?: string, syncErro
     const doc = payload.didDocument;
     did = doc.id;
     const vms: any[] = doc.verificationMethod ?? [];
+    const record = wallet.getDid(did);
+    if (record?.status === 'DEACTIVATED') return { ...fail(`DID ${did} đã bị vô hiệu hóa`), did };
     // Khóa mới phải là khóa do chính Client sinh và chưa ACTIVE
     let vm: any;
     if (keyRef) {
       newKey = wallet.findByRef(keyRef);
-      vm = newKey && vms.find((v) => v?.publicKeyJwk?.x === newKey!.publicJwk.x);
+      vm = newKey && vms.find((v) => keyX(v) === newKey!.publicJwk.x);
     } else {
       for (const v of vms) {
-        const k = wallet.findByX(v?.publicKeyJwk?.x);
+        const x = keyX(v);
+        const k = x ? wallet.findByX(x) : undefined;
         if (k && k.status !== 'ACTIVE') { newKey = k; vm = v; break; }
       }
     }
-    if (!newKey || !vm) {
-      return { ...fail('DID Document không chứa khóa mới nào do bộ ký này sinh ra'), did };
+    if (newKey && vm) {
+      newKid = vm.id;
+      // Thay khóa nếu kho đã có khóa khác của DID này (chưa bị thay); ngược lại là tạo DID
+      const current = currentKeys(record, newKey, !!syncError);
+      const others = (record?.keys ?? []).filter((k) => k !== newKey && k.status !== 'REPLACED');
+      operation = current.length || others.length ? 'update' : 'create';
+      if (operation === 'update' && current.length === 0) {
+        return { ...fail('Kho khóa không có khóa ACTIVE của DID này nên không ký thay khóa được'), did };
+      }
+      if (operation === 'update') updateKind = 'key';
+      expectedSigners = [newKid!, ...current.map((k) => k.kid!)];
+      expectedX = [newKey.publicJwk.x];
+    } else {
+      // Không có khóa mới: chỉ chấp nhận khi mọi khóa trong DID Document đều là khóa ACTIVE của DID này
+      // trong kho, tức là cập nhật giữ nguyên khóa (sửa service)
+      const active = (record?.keys ?? []).filter((k) => k.status === 'ACTIVE');
+      const keepsKeys = !keyRef && vms.length > 0 && vms.every((v) =>
+        active.some((k) => k.kid === v?.id && k.publicJwk.x === keyX(v)));
+      if (!keepsKeys) {
+        return { ...fail('DID Document không chứa khóa mới nào do bộ ký này sinh ra, cũng không giữ nguyên khóa ACTIVE của một DID trong kho'), did };
+      }
+      if (!currentDoc) {
+        return { ...fail('Không đọc được DID Document hiện hành trên mạng nên không đối chiếu được nội dung thay đổi. Kiểm tra DID_API_URL'), did };
+      }
+      operation = 'update';
+      updateKind = 'service';
+      expectedSigners = active.map((k) => k.kid!);
+      expectedX = active.map((k) => k.publicJwk.x);
+      serviceDiff = diffServices(currentDoc, doc);
     }
-    newKid = vm.id;
-    const record = wallet.getDid(did);
-    if (record?.status === 'DEACTIVATED') return { ...fail(`DID ${did} đã bị vô hiệu hóa`), did };
-    // Thay khóa nếu kho đã có khóa khác của DID này (chưa bị thay); ngược lại là tạo DID
-    const current = currentKeys(record, newKey, !!syncError);
-    const others = (record?.keys ?? []).filter((k) => k !== newKey && k.status !== 'REPLACED');
-    operation = current.length || others.length ? 'update' : 'create';
-    if (operation === 'update' && current.length === 0) {
-      return { ...fail('Kho khóa không có khóa ACTIVE của DID này nên không ký thay khóa được'), did };
-    }
-    expectedSigners = [newKid!, ...current.map((k) => k.kid!)];
-    expectedX = [newKey.publicJwk.x];
   } else {
     did = payload.id;
     operation = 'deactivate';
@@ -137,31 +190,58 @@ export function analyze(response: any, wallet: Wallet, keyRef?: string, syncErro
   // 3. Danh sách khóa phải ký đúng quy tắc của did:cheqd
   const kids = list.map((r: any) => r.kid);
   checks.push({
-    title: `Khóa phải ký: ${expectedSigners.map(frag).join(', ')}` + (operation === 'update' ? ' (khóa mới và khóa bị gỡ)' : ''),
+    title: `Khóa phải ký: ${expectedSigners.map(frag).join(', ')}`
+      + (updateKind === 'key' ? ' (khóa mới và khóa bị gỡ)' : updateKind === 'service' ? ' (khóa authentication hiện hành, giữ nguyên)' : ''),
     errors: checkRequiredSigners(kids, expectedSigners).errors,
   });
 
-  // 4. DID Document chỉ chứa khóa của Client
+  // 4. DID Document chỉ chứa khóa của Client; service giữ nguyên trừ khi đang sửa service
   if (expectedX) {
-    checks.push({ title: 'DID Document chỉ chứa khóa của Client; id, controller và authentication đúng',
-      errors: checkDidDocument(payload.didDocument, did, expectedX).errors });
+    checks.push({
+      title: updateKind === 'service'
+        ? 'DID Document giữ nguyên khóa; id, controller, authentication đúng; service đúng dạng'
+        : operation === 'create' ? 'DID Document chỉ chứa khóa của Client; id, controller, authentication đúng; service đúng dạng'
+        : 'DID Document chỉ chứa khóa của Client; id, controller và authentication đúng; service không đổi',
+      // Tạo DID: DID Document có thể do người dùng tự soạn kèm service; mọi service được liệt kê trong tóm tắt để xác nhận
+      errors: checkDidDocument(payload.didDocument, did, expectedX, currentDoc, updateKind === 'service' || operation === 'create').errors,
+    });
+  }
+  if (updateKind === 'service') {
+    const e: string[] = [];
+    if (!sameSet(keySig(payload.didDocument), keySig(currentDoc)) || !sameSet(authOf(payload.didDocument), authOf(currentDoc))) {
+      e.push('Danh sách khóa hoặc authentication khác bản hiện hành trên mạng');
+    }
+    const d = serviceDiff!;
+    if (!d.added.length && !d.removed.length && !d.changed.length) e.push('Không có thay đổi service nào so với bản hiện hành');
+    checks.push({ title: 'So với bản trên mạng: khóa giữ nguyên, chỉ service thay đổi', errors: e });
   }
 
   // 5. Kiểm tra sơ bộ dãy byte cần ký
-  checks.push({ title: 'serializedPayload chứa DID' + (expectedX ? ' và khóa công khai mới' : '') + ' (kiểm tra sơ bộ)',
-    errors: checkPayloadContains(list[0].serializedPayload ?? '', [did, ...(expectedX ?? [])]).errors });
+  const createServices = operation === 'create' ? normServices(payload.didDocument) : [];
+  // Khóa xuất hiện trong dữ liệu cần ký đúng dạng đã viết trong DID Document (x của JWK hoặc chuỗi multibase)
+  const payloadKeys = (payload.didDocument?.verificationMethod ?? [])
+    .filter((v: any) => expectedX?.includes(keyX(v) ?? '')).map((v: any) => keyMaterial(v)).filter(Boolean) as string[];
+  const newEndpoints = serviceDiff ? [...serviceDiff.added, ...serviceDiff.changed.map((c) => c.after)].flatMap((s) => s.serviceEndpoint)
+    : createServices.flatMap((s) => s.serviceEndpoint);
+  checks.push({ title: 'serializedPayload chứa DID'
+      + (updateKind === 'service' ? ' và service mới' : expectedX ? ' và khóa công khai mới' : '') + (createServices.length ? ', endpoint của service' : '') + ' (kiểm tra sơ bộ)',
+    errors: checkPayloadContains(list[0].serializedPayload ?? '', [did, ...payloadKeys, ...newEndpoints]).errors });
 
   // 6. Có đủ khóa bí mật để ký
   const missing = kids.filter((kid: string) => kid !== newKid && !wallet.findByKid(kid));
   checks.push({ title: 'Kho khóa có đủ khóa cho mọi kid được yêu cầu', errors: missing.map((k: string) => `Không có khóa ${k}`) });
 
+  const keptServices = (payload.didDocument?.service ?? []).length;
   const summary =
-    operation === 'create' ? [`TẠO DID ${did}`, `Khóa: ${frag(newKid)} (x = ${newKey!.publicJwk.x})`]
-    : operation === 'update' ? [`THAY KHÓA của ${did}`, `Gỡ: ${expectedSigners.slice(1).map(frag).join(', ')}`, `Thêm: ${frag(newKid)} (x = ${newKey!.publicJwk.x})`]
+    operation === 'create' ? [`TẠO DID ${did}`, `Khóa: ${frag(newKid)} (x = ${newKey!.publicJwk.x})`,
+        ...createServices.map((s) => `+ Service ${frag(s.id)} (${s.type}): ${eps(s)}`)]
+    : updateKind === 'key' ? [`THAY KHÓA của ${did}`, `Gỡ: ${expectedSigners.slice(1).map(frag).join(', ')}`, `Thêm: ${frag(newKid)} (x = ${newKey!.publicJwk.x})`,
+        ...(keptServices ? [`Service giữ nguyên: ${keptServices}`] : [])]
+    : updateKind === 'service' ? [`CẬP NHẬT SERVICE của ${did}`, `Khóa giữ nguyên, ký bằng: ${expectedSigners.map(frag).join(', ')}`, ...describeServiceDiff(serviceDiff!)]
     : [`VÔ HIỆU HÓA VĨNH VIỄN ${did}`, 'DID đã vô hiệu hóa không thể cập nhật hay kích hoạt lại', `Ký bằng: ${expectedSigners.map(frag).join(', ')}`];
 
   const ok = checks.every((c) => c.errors.length === 0) && sameSet(kids, expectedSigners);
-  return { ok, jobId: response.jobId, did, operation, endpoint: ENDPOINT[operation], newKey, newKid, expectedSigners, requests, checks, summary };
+  return { ok, jobId: response.jobId, did, operation, endpoint: ENDPOINT[operation], updateKind, newKey, newKid, expectedSigners, requests, checks, summary };
 }
 
 /** Khóa hiện hành của DID theo kho khóa: ACTIVE; nếu không đọc được mạng thì tính cả khóa PENDING (đã cảnh báo) */

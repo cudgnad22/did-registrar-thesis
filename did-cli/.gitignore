@@ -1,2 +1,6 @@
 node_modules
 wallet.json
+
+# tệp tạm khi ký thủ công
+req*.json
+signed*.json

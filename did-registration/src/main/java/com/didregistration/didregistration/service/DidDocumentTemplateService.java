@@ -14,7 +14,7 @@ import java.util.regex.Pattern;
  *
  *  - Tạo DID: sinh DID did:cheqd:testnet:<uuid>, khóa đầu tiên có id #key-1.
  *  - Thay khóa: đọc DID Document hiện hành trên mạng, đặt id khóa mới là #key-(n+1),
- *    DID Document mới chỉ chứa khóa mới (key replacement).
+ *    DID Document mới chỉ chứa khóa mới (key replacement); service và alsoKnownAs được giữ nguyên.
  *
  * Chỉ nhận khóa công khai, không lưu gì và không ghi lên mạng. Client vẫn phải đối chiếu
  * DID Document này trước khi ký, vì đây là dữ liệu do Registrar tạo ra.
@@ -57,6 +57,8 @@ public class DidDocumentTemplateService {
         String targetDid;
         int index;
         List<String> replacedKeys = List.of();
+        Object keptService = null;
+        Object keptAlsoKnownAs = null;
         if (did == null || did.isBlank()) {
             operation = "create";
             targetDid = DidDocumentValidator.DID_PREFIX + UUID.randomUUID();
@@ -72,10 +74,11 @@ public class DidDocumentTemplateService {
                 throw new TemplateException(409, "DID_DEACTIVATED", targetDid + " đã bị vô hiệu hóa, không thể thay khóa");
             }
             int max = 0;
+            byte[] newRaw = Base64.getUrlDecoder().decode((String) jwk.get("x"));
             for (Object o : asList(doc.get("verificationMethod"))) {
                 Map<String, Object> vm = asMap(o);
-                Map<String, Object> pk = asMap(vm.get("publicKeyJwk"));
-                if (jwk.get("x").equals(pk.get("x"))) {
+                // So theo byte: khóa hiện hành có thể viết dạng JWK hoặc multibase (Ed25519VerificationKey2020)
+                if (Arrays.equals(newRaw, DidDocumentValidator.ed25519PublicKey(vm))) {
                     throw new TemplateException(400, "KEY_ALREADY_USED", "Khóa công khai này đã có trong DID Document hiện hành; hãy sinh khóa mới");
                 }
                 Matcher m = KEY_INDEX.matcher(String.valueOf(vm.get("id")));
@@ -87,6 +90,9 @@ public class DidDocumentTemplateService {
                 auth.add(a instanceof Map<?, ?> am ? String.valueOf(am.get("id")) : String.valueOf(a));
             }
             replacedKeys = auth;
+            // Thay khóa không được làm mất các trường khác của DID Document hiện hành
+            keptService = doc.get("service");
+            keptAlsoKnownAs = doc.get("alsoKnownAs");
         }
 
         String keyId = targetDid + "#key-" + index;
@@ -103,6 +109,8 @@ public class DidDocumentTemplateService {
         didDocument.put("verificationMethod", List.of(vm));
         didDocument.put("authentication", List.of(keyId));
         didDocument.put("assertionMethod", List.of(keyId));
+        if (keptService instanceof List<?> services && !services.isEmpty()) didDocument.put("service", services);
+        if (keptAlsoKnownAs instanceof List<?> aliases && !aliases.isEmpty()) didDocument.put("alsoKnownAs", aliases);
 
         Map<String, Object> out = new LinkedHashMap<>();
         out.put("operation", operation);

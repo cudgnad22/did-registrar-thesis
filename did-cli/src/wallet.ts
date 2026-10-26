@@ -13,6 +13,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync, chmodSync, renameSy
 import { dirname, join } from 'node:path';
 import { homedir } from 'node:os';
 import { randomBytes } from 'node:crypto';
+import { keyX } from './keys.ts';
 
 export type PublicJwk = { kty: string; crv: string; x: string };
 export type PrivateJwk = PublicJwk & { d: string };
@@ -126,7 +127,7 @@ export class Wallet {
     if (!d) return [];
     const changes: string[] = [];
     if (didDocument) {
-      const ledgerX = (didDocument.verificationMethod ?? []).map((vm: any) => vm?.publicKeyJwk?.x);
+      const ledgerX = (didDocument.verificationMethod ?? []).map((vm: any) => keyX(vm));
       for (const k of d.keys) {
         const next: KeyStatus = ledgerX.includes(k.publicJwk.x) ? 'ACTIVE' : k.status === 'PENDING' ? 'PENDING' : 'REPLACED';
         if (next !== k.status) { changes.push(`${frag(k.kid)}: ${k.status} -> ${next}`); k.status = next; }

@@ -8,9 +8,48 @@
  *                nếu không đổi khóa: mọi khóa authentication của bản mới
  *   deactivate : các khóa trong authentication của DID Document hiện hành
  * Key rotation (giữ nguyên id, đổi vật liệu khóa) không được hỗ trợ: ứng dụng dùng key replacement.
+ *
+ * Khóa Ed25519 được nhận ở hai dạng (mạng cheqd lưu nguyên dạng được gửi lên):
+ *   JsonWebKey2020             publicKeyJwk { kty: OKP, crv: Ed25519, x: base64url(32 byte) }
+ *   Ed25519VerificationKey2020 publicKeyMultibase "z" + base58btc(0xed 0x01 + 32 byte)
  */
 import { createPublicKey, verify } from 'node:crypto';
 import { ModuleError, Operation } from './config.js';
+
+const B58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+function base58Decode(s: string): Buffer | null {
+  let n = 0n;
+  for (const c of s) { const i = B58.indexOf(c); if (i < 0) return null; n = n * 58n + BigInt(i); }
+  let hex = n === 0n ? '' : n.toString(16); if (hex.length % 2) hex = '0' + hex;
+  const lead = s.match(/^1*/)![0].length;
+  return Buffer.concat([Buffer.alloc(lead), Buffer.from(hex, 'hex')]);
+}
+
+/**
+ * 32 byte khóa công khai Ed25519 của một Verification Method, hoặc null nếu kiểu/dạng khóa chưa hỗ trợ.
+ * Dùng chung cho xác minh chữ ký, so sánh khóa giữa hai phiên bản và kiểm tra sớm ở bước prepare.
+ */
+export function ed25519Raw(vm: any): Buffer | null {
+  if (vm?.type === 'JsonWebKey2020' && vm.publicKeyJwk?.kty === 'OKP' && vm.publicKeyJwk?.crv === 'Ed25519' && typeof vm.publicKeyJwk.x === 'string') {
+    const raw = Buffer.from(vm.publicKeyJwk.x, 'base64url');
+    return raw.length === 32 ? raw : null;
+  }
+  if (vm?.type === 'Ed25519VerificationKey2020' && typeof vm.publicKeyMultibase === 'string' && vm.publicKeyMultibase.startsWith('z')) {
+    const bytes = base58Decode(vm.publicKeyMultibase.slice(1));
+    if (bytes && bytes.length === 34 && bytes[0] === 0xed && bytes[1] === 0x01) return bytes.subarray(2);
+  }
+  return null;
+}
+
+/** Mọi Verification Method của DID Document mới phải đọc được khóa (chặn trước khi Client ký, thay vì để mạng trả 1205) */
+export function assertKeysReadable(doc: any) {
+  for (const vm of doc?.verificationMethod ?? []) {
+    if (!ed25519Raw(vm)) {
+      throw new ModuleError(422, 'UNSUPPORTED_KEY',
+        `${vm?.id}: chỉ hỗ trợ khóa Ed25519 kiểu JsonWebKey2020 (publicKeyJwk) hoặc Ed25519VerificationKey2020 (publicKeyMultibase hợp lệ)`);
+    }
+  }
+}
 
 const authIds = (doc: any): string[] =>
   (doc?.authentication ?? []).map((a: any) => (typeof a === 'string' ? a : a.id));
@@ -20,9 +59,10 @@ export function requiredSigners(operation: Operation, newDoc: any, currentDoc: a
   if (operation === 'deactivate') return [...new Set(authIds(currentDoc))];
 
   // update
+  // So vật liệu khóa theo byte: cùng một khóa viết ở dạng JWK hay multibase vẫn là một khóa
+  const material = (vm: any) => ed25519Raw(vm)?.toString('hex') ?? JSON.stringify(vm.publicKeyJwk ?? vm.publicKeyMultibase ?? null);
   const rotated = (newDoc.verificationMethod ?? []).some((vm: any) =>
-    (currentDoc.verificationMethod ?? []).some((pvm: any) =>
-      pvm.id === vm.id && JSON.stringify(pvm.publicKeyJwk ?? null) !== JSON.stringify(vm.publicKeyJwk ?? null)));
+    (currentDoc.verificationMethod ?? []).some((pvm: any) => pvm.id === vm.id && material(pvm) !== material(vm)));
   if (rotated) {
     throw new ModuleError(422, 'KEY_ROTATION_NOT_SUPPORTED',
       'Không hỗ trợ đổi khóa khi giữ nguyên id Verification Method; hãy dùng id mới (key replacement)');
@@ -35,15 +75,16 @@ export function requiredSigners(operation: Operation, newDoc: any, currentDoc: a
   return [...new Set([...next, ...removed])];                          // cập nhật thông thường
 }
 
-/** Tìm khóa công khai theo id: ưu tiên DID Document mới, sau đó bản hiện hành (khóa cũ bị gỡ) */
-function findPublicJwk(id: string, newDoc: any, currentDoc: any) {
+/** Tìm khóa công khai theo id: ưu tiên DID Document mới, sau đó bản hiện hành (khóa cũ bị gỡ); trả về dạng JWK để xác minh */
+export function findPublicJwk(id: string, newDoc: any, currentDoc: any) {
   const vm = [...(newDoc?.verificationMethod ?? []), ...(currentDoc?.verificationMethod ?? [])]
     .find((v: any) => v.id === id);
-  if (!vm?.publicKeyJwk || vm.publicKeyJwk.crv !== 'Ed25519') {
-    throw new ModuleError(422, 'UNSUPPORTED_KEY', `Không tìm thấy khóa Ed25519 dạng JWK cho ${id}`);
+  const raw = ed25519Raw(vm);
+  if (!raw) {
+    throw new ModuleError(422, 'UNSUPPORTED_KEY',
+      `${id}: không đọc được khóa Ed25519 (chỉ hỗ trợ JsonWebKey2020/publicKeyJwk và Ed25519VerificationKey2020/publicKeyMultibase)`);
   }
-  const { kty, crv, x } = vm.publicKeyJwk;
-  return { kty, crv, x };
+  return { kty: 'OKP', crv: 'Ed25519', x: raw.toString('base64url') };
 }
 
 /**

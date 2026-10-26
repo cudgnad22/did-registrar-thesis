@@ -6,12 +6,10 @@
  *
  *   keygen                           sinh khóa mới, in khóa công khai (JWK và hex)
  *   sign <tệp> [--key <keyRef>]      đối chiếu + ký yêu cầu ký (phản hồi lần gọi thứ nhất),
- *                                    in body cho lần gọi thứ hai (ký thủ công, dùng với Swagger UI)
+ *                                    in body cho lần gọi thứ hai (ký thủ công)
  *   keys                             liệt kê DID và khóa trong kho
  *   sync <did> | --all               đối chiếu kho khóa với DID Document trên mạng
  *   discard <did> <keyRef>           bỏ một khóa PENDING chưa từng lên mạng
- *   agent [--port 7070] [--origin <url>] [--token <mã>] [--yes]
- *                                    chạy agent ký cho giao diện của Registrar
  *   resolve <did> | status <jobId>   tra cứu (qua Registrar)
  *
  * Biến môi trường: DID_API_URL (mặc định http://localhost:8085), DID_CLI_WALLET (vị trí tệp kho khóa)
@@ -19,10 +17,10 @@
 import { readFileSync } from 'node:fs';
 import { Wallet, WALLET_PATH, frag, newKeyRef } from './wallet.ts';
 import { signerFor } from './signer.ts';
-import { analyze, signAll, syncDid, refreshFromLedger } from './signing.ts';
+import { analyze, signAll, syncDid, refreshFromLedger, readCurrentDoc } from './signing.ts';
 import { printAnalysis, confirm } from './confirm.ts';
-import { startAgent } from './agent.ts';
 import { api, ApiError, API_URL } from './api.ts';
+import { multibaseOf } from './keys.ts';
 
 const argv = process.argv.slice(2);
 const command = argv[0];
@@ -39,7 +37,9 @@ async function cmdKeygen() {
   const created = await signerFor(kms).createKey();
   const k = wallet.addLooseKey({ keyRef: newKeyRef(), kms, ...created });
   info(`Đã sinh khóa ${k.keyRef} (bộ ký ${kms}), lưu tại ${WALLET_PATH}. Khóa bí mật không được in ra.`);
-  out(JSON.stringify({ keyRef: k.keyRef, publicKeyJwk: k.publicJwk, publicKeyHex: Buffer.from(k.publicJwk.x, 'base64url').toString('hex') }, null, 2));
+  // Cùng một khóa ở ba dạng: JWK (JsonWebKey2020), multibase (Ed25519VerificationKey2020), hex (ô khóa công khai trên giao diện)
+  out(JSON.stringify({ keyRef: k.keyRef, publicKeyJwk: k.publicJwk, publicKeyMultibase: multibaseOf(k.publicJwk.x),
+    publicKeyHex: Buffer.from(k.publicJwk.x, 'base64url').toString('hex') }, null, 2));
 }
 
 async function cmdSign(file: string) {
@@ -48,7 +48,8 @@ async function cmdSign(file: string) {
   const wallet = Wallet.load();
   const syncError = await refreshFromLedger(response, wallet, api.resolve);
   if (syncError) info(`Cảnh báo: không đối chiếu được với mạng (${syncError})`);
-  const a = analyze(response, wallet, option('key'), syncError);
+  const currentDoc = await readCurrentDoc(response, api.resolve);
+  const a = analyze(response, wallet, option('key'), syncError, currentDoc);
   printAnalysis(a);
   if (!a.ok) throw new Error('Từ chối ký: đối chiếu không đạt. Không có chữ ký nào được tạo.');
   const yes = flag('yes') || await confirm(a.operation === 'deactivate' ? `Ký để VÔ HIỆU HÓA VĨNH VIỄN ${a.did}?` : `Ký yêu cầu ${a.operation} cho ${a.did}?`);
@@ -90,8 +91,6 @@ function usage() {
   keys                                Liệt kê DID và khóa
   sync <did> | --all                  Đối chiếu kho khóa với mạng
   discard <did> <keyRef>              Bỏ khóa PENDING chưa lên mạng
-  agent [--port 7070] [--origin http://localhost:8085] [--token <mã>] [--yes]
-                                      Chạy agent ký cho giao diện /ui của Registrar
   resolve <did> | status <jobId>      Tra cứu qua Registrar
 
 Registrar: ${API_URL}   (DID_API_URL)
@@ -108,12 +107,6 @@ async function main() {
     case 'discard': {
       const ok = Wallet.load().discardPending(need(0, 'did'), need(1, 'keyRef'));
       return out(ok ? 'Đã bỏ khóa PENDING' : 'Không có khóa PENDING như vậy');
-    }
-    case 'agent': {
-      const origins = argv.flatMap((a, i) => (a === '--origin' ? [argv[i + 1]] : []));
-      startAgent({ port: Number(option('port') ?? 7070), origins: origins.length ? origins : ['http://localhost:8085'],
-        token: option('token'), autoConfirm: flag('yes'), kms: 'local' });
-      return;
     }
     case 'resolve': return out(JSON.stringify(await api.resolve(need(0, 'did')), null, 2));
     case 'status': return out(JSON.stringify(await api.getOperation(need(0, 'jobId')), null, 2));

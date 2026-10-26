@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DID Registrar · Giao diện</title>
-  <link rel="icon" type="image/png" href="/api-docs/favicon-32x32.png">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23212529'/%3E%3Ctext x='16' y='22' font-family='Arial' font-size='14' font-weight='700' fill='%23fff' text-anchor='middle'%3EDID%3C/text%3E%3C/svg%3E">
   <style>
     /* Bố cục tham khảo giao diện Universal Registrar (universal-registrar-frontend, DIF):
        thanh chọn thao tác, hàng nút thực thi + JOB ID, các ô OPTIONS / SECRET / DID DOCUMENT, các tab kết quả. */
@@ -24,10 +24,6 @@
     .app-nav .wrap { max-width: 1400px; margin: 0 auto; padding: 0 16px; display: flex; align-items: center; gap: 20px; height: 52px; }
     .app-nav .brand { font-size: 19px; font-weight: 600; color: #fff; text-decoration: none; }
     .app-nav .sub { color: rgba(255,255,255,.6); font-size: 13px; }
-    .app-nav nav { margin-left: auto; display: flex; gap: 4px; }
-    .app-nav nav a { color: rgba(255,255,255,.75); text-decoration: none; padding: 7px 12px; border-radius: 5px; }
-    .app-nav nav a:hover { color: #fff; background: rgba(255,255,255,.08); }
-    .app-nav nav a.active { color: #fff; background: rgba(255,255,255,.15); }
 
     .page { max-width: 1400px; margin: 0 auto; padding: 16px 16px 48px; }
     .seg { background: var(--seg); border: 1px solid var(--line); border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,.06); margin-bottom: 14px; }
@@ -42,16 +38,6 @@
     .optabs .method { margin-left: auto; padding: 10px 16px; font-size: 13px; color: var(--muted); border-left: 1px solid var(--line); }
     .optabs .method b { color: var(--text); font-family: var(--mono); }
 
-    .head { display: flex; flex-wrap: wrap; gap: 14px 30px; align-items: center; }
-    .head h1 { font-size: 20px; margin: 0; }
-    .head p { margin: 2px 0 0; color: var(--muted); font-size: 13px; max-width: 640px; }
-    .signer { margin-left: auto; display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
-    .signer label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--muted); margin-bottom: 3px; }
-    .signer input, .signer select { font: inherit; font-size: 13px; padding: 6px 9px; border: 1px solid var(--line); border-radius: 4px; background: #fff; }
-    .signer input { width: 180px; }
-    .agent-status { display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600; padding-bottom: 6px; }
-    .dot { width: 10px; height: 10px; border-radius: 50%; background: #bbb; display: inline-block; }
-    .dot.ok { background: var(--ok); } .dot.bad { background: var(--danger); }
 
     .btn { font: inherit; font-size: 13px; font-weight: 700; border: 0; border-radius: 4px; padding: 8px 16px; cursor: pointer; background: #e0e1e2; color: rgba(0,0,0,.65); }
     .btn:hover { filter: brightness(.95); }
@@ -130,19 +116,54 @@
     .foot { font-size: 12.5px; color: var(--muted); padding: 10px 18px; }
     @media (max-width: 900px) {
       .fields { grid-template-columns: minmax(0, 1fr); } .fields.two { grid-template-columns: minmax(0, 1fr); }
-      .op .bar input { width: 100%; } .signer { margin-left: 0; }
+      .op .bar input { width: 100%; }
     }
+
+    /* Bố cục mới: các nhóm 1-5 theo thứ tự DID, chủ thể, DID Document, options/secret, cam đoan; nút thực thi ở cuối */
+    .grp h4 .num { display: inline-flex; width: 22px; height: 22px; border-radius: 50%; background: var(--dark); color: #fff; font-size: 12px; align-items: center; justify-content: center; }
+    .lookup { display: flex; gap: 8px; align-items: center; }
+    .upload { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin: 0 0 8px; padding: 9px 12px; border: 1px dashed var(--line); border-radius: 4px; background: #fafbfc; }
+    .upload.drag { border-color: var(--primary); background: var(--info-bg); }
+    .locked .upload { opacity: .55; }
+    .lookup input { flex: 1; font: 12.5px var(--mono); padding: 7px 9px; border: 1px solid var(--line); border-radius: 4px; }
+    .modes { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
+    .modes label { display: flex; gap: 8px; align-items: flex-start; border: 1px solid var(--line); border-radius: 4px; padding: 8px 12px; cursor: pointer; flex: 1 1 220px; font-size: 13px; background: #fff; }
+    .modes label.on { border-color: var(--primary); background: var(--info-bg); }
+    .modes label.off { opacity: .55; cursor: not-allowed; }
+    .modes label small { display: block; color: var(--muted); font-size: 12px; }
+    .wallet { border: 1px dashed var(--line); border-radius: 4px; padding: 10px 12px; margin-bottom: 10px; }
+    .commit { display: flex; gap: 8px; align-items: flex-start; border: 1px solid var(--line); border-radius: 4px; padding: 9px 12px; font-size: 13px; background: #fafbfc; }
+    .commit.danger { background: var(--bad-bg); border-color: var(--danger); }
+    .execbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 14px 18px; background: #f7f8fa; border-bottom: 1px solid var(--line); }
+    .execbar .btn[data-act="exec"] { font-size: 14px; padding: 10px 22px; min-width: 260px; }
+    .execbar .why { font-size: 12.5px; color: var(--muted); }
+    /* Khung "thao tác đang dở" (tham khảo khung Ongoing Create của godiddy) */
+    .ongoing { margin: 0; border-bottom: 1px solid var(--line); background: #eef5fc; padding: 12px 18px; }
+    .ongoing .top { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .ongoing .top b { font-size: 14px; }
+    .ongoing .top .right { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
+    .ongoing .steps { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; font-size: 12.5px; }
+    .ongoing .steps span { padding: 2px 8px; border-radius: 10px; background: #fff; border: 1px solid var(--line); color: var(--muted); }
+    .ongoing .steps span.done { background: var(--ok-bg); border-color: var(--ok); color: #1a6b31; }
+    .ongoing .steps span.cur { background: var(--primary); border-color: var(--primary); color: #fff; }
+    .locked textarea, .locked input:not([type=checkbox]):not([type=radio]) { background: #f3f4f6 !important; color: #555; }
+    textarea.filled { border-color: var(--ok); box-shadow: 0 0 0 2px rgba(33,186,69,.15); }
+    table.svc td { padding: 3px 4px; }
+    table.svc input { font: 12.5px var(--mono); width: 100%; padding: 5px 7px; border: 1px solid var(--line); border-radius: 3px; }
+    ul.chg { margin: 4px 0 0; padding-left: 18px; font-family: var(--mono); font-size: 12px; }
+    table.hist { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 8px; }
+    table.hist th, table.hist td { border: 1px solid var(--line); padding: 4px 8px; text-align: left; }
+    table.hist th { background: #f7f8fa; font-size: 11px; text-transform: uppercase; }
+    table.hist td.m { font-family: var(--mono); font-size: 11.5px; }
+    .dates { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 8px; font-size: 13px; }
+    .dates div b { display: block; font-size: 11px; text-transform: uppercase; color: var(--muted); }
   </style>
 </head>
 <body>
 <header class="app-nav">
   <div class="wrap">
     <a class="brand" href="/ui/create">DID Registrar</a>
-    <span class="sub">did:cheqd · Client-managed Secret</span>
-    <nav>
-      <a href="/ui/create" class="active">Giao diện</a>
-      <a href="/api-docs/index.html">Tài liệu API</a>
-    </nav>
+    <span class="sub">did:cheqd · DIF DID Registration</span>
   </div>
 </header>
 
@@ -156,30 +177,10 @@
     <span class="method">Phương thức: <b>did:cheqd</b></span>
   </div>
 
-  <!-- Tiêu đề và bộ ký -->
-  <div class="seg pad head">
-    <div>
-      <h1>DID Registrar cho did:cheqd</h1>
-      <p>Thao tác theo đặc tả DIF DID Registration, chế độ Client-managed Secret. Khóa bí mật chỉ nằm ở bộ ký phía Client;
-        trang này chỉ nhận khóa công khai và chữ ký.</p>
-    </div>
-    <div class="signer">
-      <div>
-        <label for="sign-mode">Cách ký</label>
-        <select id="sign-mode">
-          <option value="agent">Bộ ký did-cli agent</option>
-          <option value="manual">Ký thủ công</option>
-        </select>
-      </div>
-      <div class="agent-only"><label for="agent-url">Địa chỉ bộ ký</label><input id="agent-url" type="text" value="http://127.0.0.1:7070"></div>
-      <div class="agent-only"><label for="agent-token">Mã ghép cặp</label><input id="agent-token" type="text" placeholder="in ra khi chạy agent"></div>
-      <div class="agent-only"><button class="btn basic" id="btn-connect">Kết nối bộ ký</button></div>
-      <div class="agent-status agent-only" id="agent-status"><span class="dot"></span><span>Chưa kết nối bộ ký</span></div>
-    </div>
-  </div>
-
   <div id="panels"></div>
   <datalist id="dl-jobs"></datalist>
+  <datalist id="dl-dids"></datalist>
+  <datalist id="dl-svctypes"><option value="LinkedDomains" label="W3C DID Spec Registries · nối DID với tên miền"><option value="DIDCommMessaging" label="W3C DID Spec Registries · nhận tin nhắn DIDComm"><option value="LinkedResource" label="ví dụ riêng của cheqd · trỏ tới DID-Linked Resource"></datalist>
 </div>
 
 <script>
@@ -200,10 +201,39 @@ function hl(value) {
     (m, str, colon, bool) => str ? (colon ? `<span class="k">${str}</span>${colon}` : `<span class="s">${str}</span>`)
       : bool ? `<span class="b">${m}</span>` : m === 'null' ? `<span class="z">${m}</span>` : `<span class="n">${m}</span>`);
 }
+/** Hiển thị thời điểm theo giờ của trình duyệt; giữ nguyên chuỗi nếu không đọc được */
+function fmtTime(ts) {
+  if (!ts) return '—';
+  const d = new Date(String(ts).replace(/(\.\d{3})\d+/, '$1'));   // LocalDateTime của Java có tới 6 chữ số thập phân
+  return isNaN(d) ? String(ts) : d.toLocaleString('vi-VN', { hour12: false });
+}
+const frag = (k) => String(typeof k === 'string' ? k : k?.id ?? '').split('#')[1] ?? String(k);
+/* Khóa Ed25519 ở hai dạng ứng dụng hỗ trợ: JsonWebKey2020 (publicKeyJwk) và Ed25519VerificationKey2020 (publicKeyMultibase) */
+const KEY_TYPES = ['JsonWebKey2020', 'Ed25519VerificationKey2020'];
+const B58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+function base58Decode(str) {
+  let n = 0n;
+  for (const c of str) { const i = B58.indexOf(c); if (i < 0) return null; n = n * 58n + BigInt(i); }
+  let hex = n === 0n ? '' : n.toString(16); if (hex.length % 2) hex = '0' + hex;
+  const bytes = [...(str.match(/^1*/)[0])].map(() => 0);
+  for (let i = 0; i < hex.length; i += 2) bytes.push(parseInt(hex.slice(i, i + 2), 16));
+  return bytes;
+}
+const b64urlLen = (x) => { try { return atob(String(x).replace(/-/g, '+').replace(/_/g, '/')).length; } catch { return -1; } };
+/** Chuỗi đại diện 32 byte khóa (dùng để so sánh khóa giữa hai bản), hoặc null nếu kiểu/dạng khóa không hỗ trợ */
+function keyX(vm) {
+  if (vm?.type === 'JsonWebKey2020' && vm.publicKeyJwk?.kty === 'OKP' && vm.publicKeyJwk?.crv === 'Ed25519') return b64urlLen(vm.publicKeyJwk.x) === 32 ? 'x:' + vm.publicKeyJwk.x : null;
+  if (vm?.type === 'Ed25519VerificationKey2020' && typeof vm.publicKeyMultibase === 'string' && vm.publicKeyMultibase.startsWith('z')) {
+    const b = base58Decode(vm.publicKeyMultibase.slice(1));
+    if (b && b.length === 34 && b[0] === 0xed && b[1] === 0x01) return 'x:' + btoa(String.fromCharCode(...b.slice(2))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+  return null;
+}
+const keyLabel = (vm) => `${frag(vm.id)}${vm.type && vm.type !== 'JsonWebKey2020' ? ` (${vm.type})` : ''}`;
 const OPS = ['create', 'update', 'deactivate'];
 const ENDPOINT = { create: '/1.0/create?method=cheqd', update: '/1.0/update', deactivate: '/1.0/deactivate' };
-const SPEC = { create: 'createDid', update: 'updateDid', deactivate: 'deactivateDid' };
-const TITLE = { create: 'Tạo DID', update: 'Cập nhật DID (thay khóa)', deactivate: 'Vô hiệu hóa DID' };
+const TITLE = { create: 'Tạo DID', update: 'Cập nhật DID', deactivate: 'Vô hiệu hóa DID' };
+const DATE_LABEL = { create: 'Ngày tạo', update: 'Ngày cập nhật', deactivate: 'Ngày vô hiệu hóa' };
 
 /* ===================================================================== HTTP */
 async function http(method, url, body, headers = {}) {
@@ -226,105 +256,134 @@ function curl(ex) {
   return c;
 }
 
-/* ===================================================================== bộ ký (agent) */
-const agent = {
-  ok: false,
-  url() { return $('#agent-url').value.replace(/\/+$/, ''); },
-  token() { return $('#agent-token').value.trim(); },
-  call(method, path, body) { return http(method, this.url() + path, body, { 'X-Agent-Token': this.token() }); },
-};
-const mode = () => $('#sign-mode').value;
-
-async function connectAgent() {
-  store.set('ui.agentUrl', agent.url()); store.set('ui.agentToken', agent.token());
-  const ex = await agent.call('GET', '/status');
-  agent.ok = ex.status === 200;
-  $('#agent-status').innerHTML = agent.ok
-    ? `<span class="dot ok"></span><span>Đã kết nối did-cli agent · bộ ký ${esc(ex.response.kms)} · ${esc(ex.response.keys)} khóa</span>`
-    : `<span class="dot bad"></span><span>${ex.status === 401 ? 'Sai mã ghép cặp' : ex.status === 403 ? 'Bộ ký không cho phép trang này (origin)' : 'Không kết nối được bộ ký. Hãy chạy: did-cli agent'}</span>`;
-  return agent.ok;
-}
-function applyMode() {
-  const manual = mode() === 'manual';
-  $$('.agent-only').forEach((e) => e.classList.toggle('hidden', manual));
-  $$('.manual-only').forEach((e) => e.classList.toggle('hidden', !manual));
-  store.set('ui.mode', mode());
-}
-
 /* ===================================================================== dựng các khối thao tác */
+/* Bộ ký phía Client chạy tách khỏi trang này (did-cli trên máy người dùng): trang chỉ nhận khóa công khai và chữ ký do người dùng dán vào. */
 function panelHtml(op) {
+  // 1. DID
   const g1 = op === 'create' ? `
-      <div class="grp"><h4>1. Thông tin người sở hữu <span class="hint">chỉ lưu tại ứng dụng, không ghi lên mạng</span></h4>
+      <div class="grp"><h4><span class="num">1</span> DID <span class="hint">Registrar sinh DID mới khi dựng DID Document (bước 3)</span></h4>
+        <div class="lookup"><input type="text" data-f="newDid" readonly placeholder="did:cheqd:testnet:<uuid> (sẽ có sau khi dựng DID Document)"></div>
+      </div>` : `
+      <div class="grp lockable"><h4><span class="num">1</span> DID <span class="hint">nhập DID của bạn hoặc chọn trong danh sách, rồi tra cứu trên mạng cheqd và trong ứng dụng</span></h4>
+        <div class="lookup">
+          <input type="text" data-f="did" list="dl-dids" placeholder="did:cheqd:testnet:<uuid>" autocomplete="off">
+          <button class="btn primary" data-act="lookup">Tra cứu</button>
+        </div>
+        <div class="pdesc">Danh sách gợi ý gồm các DID do ứng dụng này tạo. Xem DID trong kho khóa của bạn bằng <code>did-cli keys</code>.</div>
+        <div data-out="details"></div>
+      </div>`;
+  // 2. Thông tin chủ thể
+  const g2 = op === 'create' ? `
+      <div class="grp lockable"><h4><span class="num">2</span> Thông tin chủ thể <span class="hint">chỉ lưu tại ứng dụng, không ghi lên mạng</span></h4>
         <div class="fields">
           <div class="f"><label>Nhãn DID (label)</label><input type="text" data-f="label" placeholder="ví dụ: demo"></div>
-          <div class="f"><label>Họ tên (fullName)</label><input type="text" data-f="fullName" placeholder="Họ và tên người sở hữu"></div>
-          <div class="f"><label>Tổ chức (organization)</label><input type="text" data-f="organization" placeholder="Đơn vị"></div>
+          <div class="f"><label>Họ tên</label><input type="text" data-f="fullName" placeholder="Họ và tên người sở hữu"></div>
+          <div class="f"><label>Tổ chức</label><input type="text" data-f="organization" placeholder="Đơn vị"></div>
           <div class="f"><label>Email</label><input type="email" data-f="email" placeholder="email@example.com"></div>
         </div>
         <div class="pdesc">DID Document trên mạng là công khai và không xóa được, nên thông tin cá nhân không được đưa vào DID Document.</div>
       </div>` : `
-      <div class="grp"><h4>1. DID và người sở hữu <span class="right"><button class="btn basic sm" data-act="refresh">Tải lại danh sách</button></span></h4>
-        <div class="fields two">
-          <div class="f"><label>DID</label><select data-f="did" class="did-select"></select></div>
-          <div class="f"><label>Người sở hữu</label><div data-out="owner" class="pdesc" style="margin-top:8px">—</div></div>
-        </div>
+      <div class="grp"><h4><span class="num">2</span> Thông tin chủ thể <span class="hint">đọc từ ứng dụng sau khi tra cứu DID</span></h4>
+        <div data-out="owner" class="pdesc">Chưa tra cứu DID.</div>
       </div>`;
-  const g2 = op === 'deactivate' ? `
-      <div class="grp"><h4>2. DID Document hiện hành <span class="hint">chỉ để xem, không gửi đi</span>
-          <span class="right"><button class="btn basic sm" data-act="current">Đọc lại từ mạng</button></span></h4>
+  // 3. DID Document
+  const g3 = op === 'deactivate' ? `
+      <div class="grp"><h4><span class="num">3</span> DID Document hiện hành <span class="hint">chỉ để xem, không gửi đi</span></h4>
         <div data-out="keynote"></div>
-        <textarea class="doc" data-f="currentDoc" readonly placeholder="Chọn DID để xem DID Document hiện hành"></textarea>
+        <textarea class="doc" data-f="currentDoc" readonly placeholder="Tra cứu DID để xem DID Document hiện hành trên mạng"></textarea>
       </div>` : `
-      <div class="grp"><h4>2. DID Document ${op === 'update' ? '<span class="hint">DID Document mới chỉ chứa khóa mới</span>' : ''}
-          <span class="right">
-            <button class="btn primary sm agent-only" data-act="key">${op === 'create' ? 'Lấy khóa công khai từ bộ ký' : 'Lấy khóa mới từ bộ ký'}</button>
-          </span></h4>
-        <div class="manual-only fields two" style="margin-bottom:8px">
-          <div class="f"><label>Khóa công khai (JWK hoặc 64 ký tự hex)</label><input type="text" data-f="publicKey" placeholder='{"kty":"OKP","crv":"Ed25519","x":"..."} hoặc 64 ký tự hex'></div>
+      <div class="grp lockable"><h4><span class="num">3</span> DID Document ${op === 'update' ? '<span class="hint" data-out="g3hint"></span>' : ''}</h4>
+        ${op === 'update' ? `<div class="modes" data-out="umodes">
+          <label class="on"><input type="radio" name="umode" data-f="umode" value="key" checked>
+            <span><b>Thay khóa</b><small>Khóa mới thay toàn bộ khóa hiện hành; service giữ nguyên</small></span></label>
+          <label><input type="radio" name="umode" data-f="umode" value="service">
+            <span><b>Sửa service</b><small>Giữ nguyên khóa; thêm, sửa hoặc gỡ service</small></span></label>
+        </div>
+        <div class="hidden" data-out="svcbox" style="margin-bottom:8px">
+          <table class="hist svc"><thead><tr><th style="width:22%">Tên (id = DID#tên)</th><th style="width:22%">Type</th><th>Service endpoint (nhiều giá trị ngăn bằng dấu phẩy)</th><th style="width:60px"></th></tr></thead>
+            <tbody data-out="svcrows"></tbody></table>
+          <div style="margin-top:6px;display:flex;gap:8px">
+            <button class="btn basic sm" data-act="svc-add">+ Thêm service</button>
+            <button class="btn basic sm" data-act="svc-reset">Khôi phục như bản trên mạng</button></div>
+          <div class="pdesc">Type gợi ý: <code>LinkedDomains</code>, <code>DIDCommMessaging</code> (đăng ký trong W3C DID Specification Registries);
+            <code>LinkedResource</code> (ví dụ riêng của cheqd). Ô Type vẫn nhận giá trị khác.</div>
+        </div>` : ''}
+        <div class="fields two" style="margin-bottom:8px" data-out="keyrow">
+          <div class="f"><label>Khóa công khai${op === 'update' ? ' mới' : ''} (JWK hoặc 64 ký tự hex, lấy bằng did-cli keygen)</label><input type="text" data-f="publicKey" placeholder='{"kty":"OKP","crv":"Ed25519","x":"..."} hoặc 64 ký tự hex'></div>
           <div class="f" style="align-self:end"><button class="btn basic" data-act="template">Dựng DID Document (GET /1.0/did-document)</button></div>
         </div>
+        ${op === 'create' ? `<div class="upload" data-out="upload">
+          <b style="font-size:12px">HOẶC TỰ SOẠN</b>
+          <label class="btn basic sm" for="docfile-create">Tải DID Document từ tệp (.json, .txt)</label>
+          <input type="file" id="docfile-create" data-f="docfile" accept=".json,.jsonld,.txt,application/json,application/ld+json,text/plain" hidden>
+          <span class="pdesc" style="margin:0">hoặc kéo thả tệp vào đây. Tệp chỉ được đọc trong trình duyệt. Khóa: Ed25519 kiểu <code>JsonWebKey2020</code> hoặc <code>Ed25519VerificationKey2020</code>, của bộ ký phía Client (ví dụ <code>did-cli keygen</code>).</span>
+        </div>` : ''}
         <div data-out="keynote"></div>
         <div class="f" style="margin-top:8px"><label>DID DOCUMENT</label>
-          <textarea class="doc" data-f="didDocument" placeholder="Bấm “${op === 'create' ? 'Lấy khóa công khai từ bộ ký' : 'Lấy khóa mới từ bộ ký'}” để Registrar dựng DID Document từ khóa công khai"></textarea></div>
+          <textarea class="doc" data-f="didDocument" placeholder="${op === 'create' ? 'Nhập khóa công khai rồi bấm “Dựng DID Document”, hoặc tải tệp DID Document tự soạn, hoặc dán JSON vào đây' : 'Nhập khóa công khai rồi bấm “Dựng DID Document” để Registrar dựng DID Document từ khóa công khai'}"></textarea></div>
+        <div style="margin-top:6px"><button class="btn basic sm" data-act="validate">Kiểm tra DID và DID Document</button> <span data-out="validate"></span></div>
       </div>`;
-  const g3 = `
-      <div class="grp"><h4>3. Thông tin bổ sung <span class="hint">options${op === 'update' ? ', didDocumentOperation = ["setDidDocument"]' : ''}, secret</span></h4>
-        <div class="fields two">
-          <div class="f"><label>OPTIONS</label><textarea data-f="options"></textarea></div>
-          <div class="f"><label>SECRET</label><textarea data-f="secret" placeholder="{ }"></textarea>
-            <div class="pdesc">Lần gọi thứ nhất để trống. Lần gọi thứ hai chứa <code>signingResponse</code> do bộ ký tạo.</div></div>
+  // 4. Options, chế độ quản lý khóa, secret
+  const g4 = `
+      <div class="grp"><h4><span class="num">4</span> Options <span class="hint">chế độ quản lý khóa${op === 'update' ? ', didDocumentOperation = ["setDidDocument"]' : ''}</span></h4>
+        <div class="modes lockable" data-out="modes">
+          <label class="on"><input type="radio" name="keymode-${op}" data-f="keymode" value="client" checked>
+            <span><b>Client-managed Secret</b><small>Người dùng tự ký; <code>clientSecretMode = true</code>, chữ ký gửi trong <code>secret</code></small></span></label>
+          <label><input type="radio" name="keymode-${op}" data-f="keymode" value="external">
+            <span><b>Ví ngoài (External Secret)</b><small>Registrar nhờ ví ngoài ký; <code>clientSecretMode</code> để trống</small></span></label>
+          <label class="off" title="Ứng dụng không cho Registrar giữ khóa bí mật"><input type="radio" name="keymode-${op}" value="internal" disabled>
+            <span><b>Internal Secret</b><small>Registrar tự sinh và giữ khóa. Không hỗ trợ</small></span></label>
         </div>
-        <label class="auto agent-only"><input type="checkbox" data-f="autosign" checked> Tự động chuyển yêu cầu ký cho bộ ký và gửi lần gọi thứ hai</label>
-        ${op === 'deactivate' ? `<label class="confirm-box"><input type="checkbox" data-f="confirm">
-          <span>Tôi hiểu DID đã chọn sẽ bị vô hiệu hóa vĩnh viễn. Bộ ký sẽ hỏi xác nhận thêm một lần trên máy của tôi.</span></label>` : ''}
+        <div class="wallet hidden" data-out="wallet">
+          <div class="fields two">
+            <div class="f"><label>Địa chỉ ví ngoài</label><input type="text" data-f="walletUrl" placeholder="ví dụ: http://127.0.0.1:8200 (HashiCorp Vault)" disabled></div>
+            <div class="f" style="align-self:end"><button class="btn basic" data-act="wallet" disabled>Kết nối ví ngoài</button></div>
+          </div>
+          <div class="note warn">Chế độ ví ngoài đang được phát triển: Registrar hiện mới hỗ trợ Client-managed Secret, nên chưa thực hiện được thao tác ở chế độ này.</div>
+        </div>
+        <div class="fields two">
+          <div class="f lockable"><label>OPTIONS</label><textarea data-f="options"></textarea></div>
+          <div class="f" data-out="secretBox"><label>SECRET</label><textarea data-f="secret" placeholder="{ }"></textarea>
+            <div class="pdesc">Lần gọi thứ nhất để trống. Lần gọi thứ hai chứa <code>signingResponse</code>: chữ ký của từng <code>signingRequest</code>, không có khóa bí mật.</div>
+            <div data-out="secretCheck"></div></div>
+        </div>
+      </div>`;
+  // 5. Cam đoan
+  const g5 = `
+      <div class="grp lockable"><h4><span class="num">5</span> Cam đoan</h4>
+        <label class="commit ${op === 'deactivate' ? 'danger' : ''}"><input type="checkbox" data-f="commit">
+          <span>${op === 'deactivate'
+            ? 'Tôi cam đoan là người kiểm soát DID này và hiểu DID sẽ bị <b>vô hiệu hóa vĩnh viễn</b>, không thể cập nhật hay kích hoạt lại. Lệnh did-cli sign sẽ hỏi xác nhận thêm một lần trên máy của tôi.'
+            : 'Tôi cam đoan thông tin tôi đưa ra là đúng và tôi là người giữ khóa bí mật tương ứng với khóa công khai trong DID Document.'}</span></label>
       </div>`;
   return `
     <div class="seg op" id="op-${op}" data-op="${op}">
       <div class="bar">
-        <button class="btn ${op === 'deactivate' ? 'danger' : 'primary'}" data-act="exec" ${op === 'deactivate' ? 'disabled' : ''}>${op} → did:cheqd</button>
-        <button class="btn dark" data-act="clear">Clear</button>
-        <button class="btn basic hidden" data-act="sign">Ký bằng bộ ký</button>
+        <b>${esc(TITLE[op])}</b> <code>POST ${esc(ENDPOINT[op])}</code>
         <span class="sep"></span>
-        <label>Job ID:</label><input type="text" data-f="jobId" list="dl-jobs" placeholder="...">
-        <button class="btn primary" data-act="check">Check State</button>
-        <a class="spec" href="/api-docs/index.html#/DID%20Registration/${SPEC[op]}">Xem đặc tả điểm cuối này ↗</a>
+        <label>Job ID:</label><input type="text" data-f="jobId" list="dl-jobs" placeholder="tiếp tục một thao tác đang dở">
+        <button class="btn basic" data-act="check">Check State</button>
+        <button class="btn dark" data-act="clear">Clear</button>
       </div>
-      ${g1}${g2}${g3}
+      <div class="ongoing hidden" data-out="ongoing"></div>
+      ${g1}${g2}${g3}${g4}${g5}
+      <div class="execbar">
+        <button class="btn ${op === 'deactivate' ? 'danger' : 'primary'}" data-act="exec" disabled>${op} → did:cheqd</button>
+        <span class="why" data-out="why"></span>
+      </div>
       <div class="rtabs">
         <button data-tab="result" class="active">Result</button>
         <button data-tab="didState">DID State</button>
         <button data-tab="regMeta">Registration Metadata</button>
         <button data-tab="docMeta">Document Metadata</button>
-        <button data-tab="signer" class="agent-only">Bộ ký</button>
         <button data-tab="log">Nhật ký API <span class="cnt" data-out="logcnt">0</span></button>
       </div>
       <div class="rpane" data-pane="result"><div class="pdesc">Chưa có kết quả.</div></div>
       <div class="rpane hidden" data-pane="didState"><div class="pdesc">Chưa có kết quả.</div></div>
       <div class="rpane hidden" data-pane="regMeta"><div class="pdesc">Chưa có kết quả.</div></div>
       <div class="rpane hidden" data-pane="docMeta"><div class="pdesc">Chưa có kết quả.</div></div>
-      <div class="rpane hidden" data-pane="signer"><div class="pdesc">Chưa có yêu cầu ký nào được chuyển cho bộ ký.</div></div>
       <div class="rpane hidden" data-pane="log"><div class="pdesc">Chưa có lần gọi nào.</div></div>
-      <div class="foot">${esc(TITLE[op])}: <code>POST ${esc(ENDPOINT[op])}</code>. Mỗi thao tác gồm hai lần gọi tới cùng điểm cuối:
+      <div class="foot">Mỗi thao tác gồm hai lần gọi tới cùng điểm cuối <code>POST ${esc(ENDPOINT[op])}</code>:
         lần thứ nhất nhận <code>jobId</code> và yêu cầu ký, lần thứ hai gửi <code>jobId</code> kèm <code>secret.signingResponse</code>.</div>
     </div>`;
 }
@@ -342,7 +401,14 @@ function didsPanelHtml() {
 const state = Object.fromEntries(OPS.map((op) => [op, { log: [] }]));
 const root = (op) => $('#op-' + op);
 const f = (op, name) => $(`[data-f="${name}"]`, root(op));
+const out = (op, name) => $(`[data-out="${name}"]`, root(op));
 const pane = (op, name) => $(`[data-pane="${name}"]`, root(op));
+const keyMode = (op) => $(`[data-f="keymode"]:checked`, root(op))?.value ?? 'client';
+/** Thao tác đang dở: đã có jobId và Registrar đang chờ chữ ký (action) hoặc chờ mạng (wait) */
+const phase = (op) => {
+  const st = state[op].last?.didState?.state;
+  return state[op].jobId && (st === 'action' || st === 'wait') ? st : 'idle';
+};
 function showTab(op, name) {
   $$('.rtabs button', root(op)).forEach((b) => b.classList.toggle('active', b.dataset.tab === name));
   $$('.rpane', root(op)).forEach((p) => p.classList.toggle('hidden', p.dataset.pane !== name));
@@ -352,16 +418,26 @@ function readJson(op, name, fallback) {
   if (!v) return fallback;
   try { return JSON.parse(v); } catch { throw new Error(`Ô ${name.toUpperCase()} không phải JSON hợp lệ`); }
 }
+/** OPTIONS đi theo chế độ quản lý khóa: Client-managed -> clientSecretMode = true; ví ngoài -> bỏ trống */
 function setOptions(op) {
-  let o = { clientSecretMode: true, network: 'testnet' };
-  try { o = { ...o, ...JSON.parse(f(op, 'options').value || '{}') }; } catch { /* giữ mặc định */ }
+  let o = {};
+  try { o = JSON.parse(f(op, 'options').value || '{}'); } catch { /* giữ mặc định */ }
+  o = { network: 'testnet', ...o };
+  if (keyMode(op) === 'client') o.clientSecretMode = true; else delete o.clientSecretMode;
   if (op === 'create') { const label = f(op, 'label').value.trim(); if (label) o.label = label; else delete o.label; }
   f(op, 'options').value = pretty(o);
+}
+function applyKeyMode(op) {
+  const m = keyMode(op);
+  $$('[data-out="modes"] label', root(op)).forEach((l) => { const r = $('input', l); l.classList.toggle('on', r.checked); });
+  out(op, 'wallet').classList.toggle('hidden', m !== 'external');
+  out(op, 'secretBox').classList.toggle('hidden', m !== 'client');
+  setOptions(op); updateExec(op);
 }
 
 function logExchange(op, title, ex) {
   const s = state[op]; s.log.push({ title, ex });
-  $('[data-out="logcnt"]', root(op)).textContent = s.log.length;
+  out(op, 'logcnt').textContent = s.log.length;
   pane(op, 'log').innerHTML = s.log.map(({ title, ex }, i) => {
     const c = String(ex.status || 0)[0];
     return `<div class="exch"><div class="t">${i + 1}. ${esc(title)} <span class="code c${c}">${ex.status || 'ERR'}</span>
@@ -374,143 +450,444 @@ function logExchange(op, title, ex) {
 /** Hiển thị phản hồi của Registrar ở các tab, như Universal Registrar: RESULT, DID STATE, REGISTRATION/DOCUMENT METADATA */
 function showResponse(op, resp, extraNotes = []) {
   const s = state[op]; s.last = resp; s.notes = extraNotes;
-  const st = resp?.didState || {}; const m = resp?.didRegistrationMetadata || {};
-  if (resp?.jobId) { s.jobId = resp.jobId; f(op, 'jobId').value = resp.jobId; rememberJob(resp.jobId); }
+  const st = resp?.didState || {};
+  if (resp?.jobId) { s.jobId = resp.jobId; s.lastJobId = resp.jobId; f(op, 'jobId').value = resp.jobId; rememberJob(resp.jobId); }
+  if (st.state === 'finished' || st.state === 'failed') { s.jobId = undefined; f(op, 'jobId').value = ''; }
   pane(op, 'didState').innerHTML = resp?.didState ? `<pre class="code">${hl(resp.didState)}</pre>` : '<div class="pdesc">Không có didState.</div>';
   pane(op, 'regMeta').innerHTML = resp?.didRegistrationMetadata ? `<pre class="code">${hl(resp.didRegistrationMetadata)}</pre>` : '<div class="pdesc">Không có.</div>';
   pane(op, 'docMeta').innerHTML = resp?.didDocumentMetadata ? `<pre class="code">${hl(resp.didDocumentMetadata)}</pre>` : '<div class="pdesc">Không có.</div>';
-  renderResult(op);
-  const signBtn = $('[data-act="sign"]', root(op));
-  signBtn.classList.toggle('hidden', !(st.state === 'action' && mode() === 'agent'));
+  renderResult(op); renderOngoing(op); lockForm(op); updateExec(op);
 }
 function renderResult(op) {
   const s = state[op]; const resp = s.last; const st = resp?.didState || {}; const m = resp?.didRegistrationMetadata || {};
+  const md = resp?.didDocumentMetadata || {};
   const kids = Object.values(st.signingRequest || {}).map((r) => r.kid);
-  let html = `<div class="kv"><div>JOBID</div><div class="m">${esc(resp?.jobId ?? s.jobId ?? '—')}</div>
+  let html = `<div class="kv"><div>JOBID</div><div class="m">${esc(resp?.jobId ?? s.lastJobId ?? '—')}</div>
     <div>STATE</div><div><span class="state ${esc(st.state)}">${esc(st.state || '—')}</span>${st.action ? ` <code>${esc(st.action)}</code>` : ''}</div>
     ${st.did ? `<div>DID</div><div class="m">${esc(st.did)}</div>` : ''}
     ${kids.length ? `<div>KHÓA PHẢI KÝ</div><div class="m">${kids.map(esc).join('<br>')}</div>` : ''}
     ${m.txHash ? `<div>GIAO DỊCH</div><div class="m">${esc(m.txHash)}</div>` : ''}
     ${m.height ? `<div>KHỐI</div><div>${esc(m.height)}</div>` : ''}
     ${m.versionId ? `<div>VERSIONID</div><div class="m">${esc(m.versionId)}</div>` : ''}
-    ${st.reason || m.error ? `<div>LÝ DO</div><div>${esc(st.reason || '')} ${esc(m.error || '')}</div>` : ''}</div>`;
-  if (st.state === 'action' && mode() === 'manual') {
-    html += `<div class="note info">Registrar yêu cầu ký. Lưu phản hồi ra tệp (ví dụ <code>req.json</code>) rồi chạy <code>did-cli sign req.json</code>,
-      hoặc ký <code>serializedPayload</code> bằng ví khác. Dán kết quả vào ô <b>SECRET</b> rồi bấm lại <b>${op} → did:cheqd</b>.
-      <div style="margin-top:6px"><button class="btn basic sm" data-act="copy">Chép phản hồi</button></div></div>`;
+    ${st.reason || m.error ? `<div>LÝ DO</div><div>${esc(st.reason || m.error || '')}${m.errorMessage ? ': ' + esc(m.errorMessage) : ''}</div>` : ''}</div>`;
+  if (st.state === 'action' && m.error) {
+    html += `<div class="note bad">Registrar không nhận lần gọi vừa rồi (<code>${esc(m.error)}</code>). Thao tác vẫn đang chờ chữ ký: sửa ô SECRET hoặc ký lại rồi gửi.</div>`;
+  } else if (st.state === 'action') {
+    html += `<div class="note info">Registrar đã dựng dữ liệu cần ký và đang chờ chữ ký. Xem khung <b>Thao tác đang dở</b> ở trên để ký, rồi bấm <b>Gửi chữ ký</b>.</div>`;
   }
-  if (st.state === 'action' && mode() === 'agent' && !f(op, 'autosign').checked) {
-    html += `<div class="note info">Bấm <b>Ký bằng bộ ký</b> để chuyển yêu cầu ký cho bộ ký, hoặc tự ký rồi dán vào ô SECRET.</div>`;
+  if (st.state === 'finished') {
+    // Ngày thao tác: lấy từ metadata của mạng (created / updated)
+    const when = op === 'create' ? md.created : md.updated ?? md.created;
+    html += `<div class="note ok"><b>Hoàn tất.</b> Kết quả đã được mạng cheqd xác nhận.
+      <div class="dates"><div><b>${DATE_LABEL[op]}</b>${esc(fmtTime(when))}</div>
+        ${md.created && op !== 'create' ? `<div><b>Ngày tạo DID</b>${esc(fmtTime(md.created))}</div>` : ''}
+        ${m.height ? `<div><b>Khối</b>${esc(m.height)}</div>` : ''}</div></div>`;
   }
-  if (st.state === 'finished') html += `<div class="note ok"><b>Hoàn tất.</b> Kết quả đã được mạng cheqd xác nhận.</div>`;
   if (st.state === 'failed') html += `<div class="note bad">Thao tác thất bại${st.description ? ': ' + esc(st.description) : ''}.</div>`;
   if (st.secret) html += `<div class="box"><h5>Secret</h5><pre class="code">${hl(st.secret)}</pre></div>`;
   html += (s.notes || []).join('');
   pane(op, 'result').innerHTML = html;
 }
 function addNote(op, html) { (state[op].notes = state[op].notes || []).push(html); renderResult(op); }
-function errorOnly(op, msg) { state[op].last = null; state[op].notes = []; pane(op, 'result').innerHTML = `<div class="note bad">${msg}</div>`; showTab(op, 'result'); }
+function errorOnly(op, msg) { pane(op, 'result').innerHTML = `<div class="note bad">${msg}</div>`; showTab(op, 'result'); }
+
+/* ===================================================================== khung "thao tác đang dở" */
+function renderOngoing(op) {
+  const box = out(op, 'ongoing'); if (!box) return;
+  const p = phase(op);
+  if (p === 'idle') { box.classList.add('hidden'); box.innerHTML = ''; return; }
+  const s = state[op]; const st = s.last.didState;
+  const reqs = Object.entries(st.signingRequest || {});
+  const hasSecret = !!f(op, 'secret').value.trim();
+  const step = p === 'wait' ? 3 : hasSecret ? 2 : 1;
+  const cls = (n) => (n < step ? 'done' : n === step ? 'cur' : '');
+  box.classList.remove('hidden');
+  box.innerHTML = `<div class="top"><b>ⓘ Thao tác đang dở: ${esc(TITLE[op])}</b>
+      <span class="right">
+        ${p === 'action' ? '<button class="btn basic sm" data-act="copy">Chép yêu cầu ký</button>' : ''}
+        <button class="btn dark sm" data-act="quit">Hủy thao tác</button>
+      </span></div>
+    <div class="kv">
+      <div>JOB ID</div><div class="m">${esc(s.jobId)}</div>
+      <div>STATE</div><div><span class="state ${esc(st.state)}">${esc(st.state)}</span>${st.action ? ` <code>${esc(st.action)}</code>` : ''}</div>
+      ${st.did ? `<div>DID</div><div class="m">${esc(st.did)}</div>` : ''}
+      ${reqs.length ? `<div>KHÓA PHẢI KÝ</div><div class="m">${reqs.map(([id, r]) => `${esc(id)}: ${esc(r.kid)}`).join('<br>')}</div>` : ''}
+    </div>
+    <div class="steps"><span class="done">1. Lần gọi thứ nhất: nhận jobId và yêu cầu ký</span>
+      <span class="${cls(1)}">2. Ký serializedPayload bằng did-cli sign</span>
+      <span class="${cls(2)}">3. Xem secret rồi gửi lần gọi thứ hai</span>
+      <span class="${cls(3)}">4. Chờ mạng cheqd xác nhận</span></div>
+    ${p === 'action' ? `<div class="pdesc">Chép yêu cầu ký ra tệp (ví dụ <code>req.json</code>), chạy <code>did-cli sign req.json</code>,
+      rồi dán kết quả vào ô <b>SECRET</b> (dán nguyên kết quả hoặc chỉ phần <code>secret</code> đều được).</div>` : ''}`;
+}
+/** Khóa các ô nhập liệu khi đang có thao tác dở: lần gọi thứ hai không gửi lại DID Document hay options */
+function lockForm(op) {
+  const locked = phase(op) !== 'idle';
+  $$('.lockable', root(op)).forEach((g) => {
+    g.classList.toggle('locked', locked);
+    $$('input, textarea, button', g).forEach((el) => {
+      if (el.dataset.f === 'keymode' && el.value === 'internal') return;
+      if (el.tagName === 'BUTTON' || el.type === 'radio' || el.type === 'checkbox' || el.type === 'file') el.disabled = locked;
+      // Sửa service: DID Document do bảng service dựng ra, không gõ tay
+      else el.readOnly = locked || el.dataset.f === 'newDid' || (el.dataset.f === 'didDocument' && umode(op) === 'service');
+    });
+  });
+}
+function quitJob(op) {
+  const s = state[op]; const jobId = s.jobId;
+  s.jobId = undefined; s.last = null; s.notes = [];
+  f(op, 'jobId').value = ''; f(op, 'secret').value = ''; f(op, 'secret').classList.remove('filled'); out(op, 'secretCheck').innerHTML = '';
+  renderOngoing(op); lockForm(op); updateExec(op);
+  pane(op, 'result').innerHTML = `<div class="note warn">Đã hủy thao tác ở giao diện. Job <code>${esc(jobId)}</code> vẫn ở trạng thái chờ ký tại Registrar
+    (chưa có giao dịch nào được gửi lên mạng); có thể tiếp tục bằng ô Job ID và nút Check State.</div>`;
+  showTab(op, 'result');
+}
+
+/* ===================================================================== nút thực thi ở cuối */
+function updateExec(op) {
+  const btn = $('[data-act="exec"]', root(op)); if (!btn) return;
+  const p = phase(op); let why = ''; let ok = true;
+  if (p === 'action') {
+    btn.textContent = `Gửi chữ ký → ${op}`;
+    if (!f(op, 'secret').value.trim()) { ok = false; why = 'Chưa có chữ ký trong ô SECRET.'; }
+  } else if (p === 'wait') {
+    btn.textContent = 'Đang chờ mạng cheqd…'; ok = false; why = 'Giao dịch đã gửi, đang chờ xác nhận.';
+  } else {
+    btn.textContent = `${op} → did:cheqd`;
+    const d = state[op].details;
+    if (keyMode(op) === 'external') { ok = false; why = 'Chế độ ví ngoài chưa được hỗ trợ.'; }
+    else if (op !== 'create' && !d) { ok = false; why = 'Hãy tra cứu DID trước.'; }
+    else if (op !== 'create' && !d.ledger) { ok = false; why = 'DID không có trên mạng cheqd.'; }
+    else if (op !== 'create' && d.ledger.didDocumentMetadata?.deactivated) { ok = false; why = 'DID đã bị vô hiệu hóa.'; }
+    else if (op !== 'deactivate' && !f(op, 'didDocument').value.trim()) { ok = false; why = 'Chưa có DID Document.'; }
+    else if (op === 'update' && umode(op) === 'service' && !svcChanged(op)) { ok = false; why = 'Service chưa thay đổi so với bản trên mạng.'; }
+    else if (!f(op, 'commit').checked) { ok = false; why = 'Hãy tích ô cam đoan.'; }
+  }
+  btn.disabled = !ok || state[op].busy;
+  out(op, 'why').textContent = why;
+}
+
+/* ===================================================================== tra cứu DID (cập nhật / vô hiệu hóa) */
+async function lookupDid(op) {
+  const did = f(op, 'did').value.trim();
+  const s = state[op]; s.details = null;
+  if (!did) { out(op, 'details').innerHTML = ''; out(op, 'owner').innerHTML = 'Chưa tra cứu DID.'; updateExec(op); return; }
+  out(op, 'details').innerHTML = '<div class="pdesc">Đang tra cứu trên mạng cheqd và trong ứng dụng…</div>';
+  const ex = await http('GET', `/api/v1/dids/${encodeURIComponent(did)}/details`);
+  if (f(op, 'did').value.trim() !== did) return;
+  if (ex.status !== 200) {
+    out(op, 'details').innerHTML = `<div class="note bad">Không tìm thấy DID: ${esc(ex.response?.error?.message || ex.error || ex.status)}</div>`;
+    out(op, 'owner').innerHTML = '—'; renderCurrent(op); updateExec(op); return;
+  }
+  const d = s.details = ex.response; const r = d.ledger; const md = r?.didDocumentMetadata ?? {};
+  const doc = r?.didDocument;
+  const deactivated = !!md.deactivated;
+  const status = !r ? 'KHÔNG CÓ TRÊN MẠNG' : deactivated ? 'DEACTIVATED' : 'ACTIVE';
+  let html = `<div class="kv" style="margin-top:10px">
+      <div>TRẠNG THÁI</div><div><span class="badge ${deactivated ? 'DEACTIVATED' : r ? 'ACTIVE' : 'PENDING'}">${esc(status)}</span></div>
+      ${d.app?.label ? `<div>NHÃN</div><div>${esc(d.app.label)}</div>` : ''}
+      <div>NGÀY TẠO</div><div>${esc(fmtTime(md.created ?? d.app?.createdAt))}</div>
+      <div>CẬP NHẬT GẦN NHẤT</div><div>${esc(fmtTime(md.updated))}</div>
+      ${doc ? `<div>KHÓA</div><div class="m">${esc((doc.verificationMethod ?? []).map(keyLabel).join(', ') || '—')}</div>
+      <div>AUTHENTICATION</div><div class="m">${esc((doc.authentication ?? []).map(frag).join(', ') || '—')}</div>
+      ${(doc.service ?? []).length ? `<div>SERVICE</div><div class="m">${doc.service.map((x) => esc(frag(x.id) + ' · ' + x.type)).join('<br>')}</div>` : ''}` : ''}
+      <div>VERSIONID</div><div class="m">${esc(md.versionId ?? '—')}</div>
+    </div>`;
+  if (d.ledgerError) html += `<div class="note warn">Không đọc được mạng cheqd: ${esc(d.ledgerError.message)}</div>`;
+  if (deactivated) html += `<div class="note bad">DID đã bị vô hiệu hóa: không thể ${op === 'update' ? 'cập nhật' : 'vô hiệu hóa lần nữa'}.</div>`;
+  if (r && !d.app) html += `<div class="note info">DID này không do ứng dụng tạo. Vẫn thao tác được nếu bạn giữ khóa authentication hiện hành.</div>`;
+  if (d.operations?.length) {
+    html += `<table class="hist"><tr><th>#</th><th>Thao tác</th><th>Trạng thái</th><th>Thời điểm</th><th>Khối</th><th>txHash</th></tr>${d.operations.map((o, i) =>
+      `<tr><td>${i + 1}</td><td>${esc(o.operationType)}</td><td>${esc(o.state)}</td><td>${esc(fmtTime(o.updatedAt ?? o.createdAt))}</td>
+        <td>${esc(o.txHeight ?? '—')}</td><td class="m">${o.txHash ? esc(o.txHash.slice(0, 16)) + '…' : '—'}</td></tr>`).join('')}</table>`;
+  }
+  out(op, 'details').innerHTML = html;
+  const o = d.owner;
+  out(op, 'owner').innerHTML = o ? `<div class="kv"><div>HỌ TÊN</div><div>${esc(o.fullName || '—')}</div><div>TỔ CHỨC</div><div>${esc(o.organization || '—')}</div>
+      <div>EMAIL</div><div>${esc(o.email || '—')}</div><div>GHI NHẬN LÚC</div><div>${esc(fmtTime(o.createdAt))}</div></div>`
+    : 'DID này chưa có thông tin chủ thể trong ứng dụng.';
+  renderCurrent(op);
+  if (op === 'update') resetUpdateDoc(op);
+  updateExec(op);
+}
+function renderCurrent(op) {
+  if (op !== 'deactivate') return;
+  const doc = state[op].details?.ledger?.didDocument; const area = f(op, 'currentDoc');
+  area.value = doc ? pretty(doc) : '';
+  const auth = (doc?.authentication ?? []).map(frag);
+  renderKeyNote(op, doc ? `<div class="note info" style="margin:0 0 8px">Khóa sẽ phải ký: <code>${esc(auth.join(', '))}</code></div>` : '');
+}
 
 /* ===================================================================== DID Document từ khóa công khai */
-function renderKeyNote(op, html) { const el = $('[data-out="keynote"]', root(op)); if (el) el.innerHTML = html; }
-async function getKey(op) {
-  const s = state[op];
-  if (op === 'update' && !f(op, 'did').value) { renderKeyNote(op, '<div class="note bad">Chưa chọn DID.</div>'); return; }
-  if (!agent.ok && !(await connectAgent())) { renderKeyNote(op, '<div class="note bad">Chưa kết nối bộ ký. Nhập mã ghép cặp rồi bấm “Kết nối bộ ký”, hoặc chọn ký thủ công.</div>'); return; }
-  const ex = await agent.call('POST', '/keys', {});
-  if (ex.status !== 201) { renderKeyNote(op, `<div class="note bad">Bộ ký không sinh được khóa: ${esc(ex.error || JSON.stringify(ex.response))}</div>`); return; }
-  s.keyRef = ex.response.keyRef; s.publicJwk = ex.response.publicKeyJwk;
-  await buildTemplate(op, JSON.stringify(s.publicJwk), `Bộ ký đã sinh khóa <code>${esc(s.keyRef)}</code> và chỉ trả về khóa công khai x = <code>${esc(s.publicJwk.x)}</code>.`);
-}
+function renderKeyNote(op, html) { const el = out(op, 'keynote'); if (el) el.innerHTML = html; }
 async function buildTemplate(op, publicKey, keyMsg) {
   const s = state[op]; s.template = null;
   if (!publicKey.trim()) { renderKeyNote(op, '<div class="note bad">Chưa nhập khóa công khai.</div>'); return; }
   const isHex = /^[0-9a-fA-F]{64}$/.test(publicKey.trim());
   const q = new URLSearchParams(isHex ? { publicKeyHex: publicKey.trim() } : { publicKeyJwk: publicKey.trim() });
-  if (op === 'update') { const did = f(op, 'did').value; if (!did) { renderKeyNote(op, '<div class="note bad">Chưa chọn DID.</div>'); return; } q.set('did', did); }
+  if (op === 'update') { const did = f(op, 'did').value.trim(); if (!s.details?.ledger) { renderKeyNote(op, '<div class="note bad">Hãy tra cứu DID trước.</div>'); return; } q.set('did', did); }
   const ex = await http('GET', '/1.0/did-document?' + q.toString());
   logExchange(op, 'Dựng DID Document từ khóa công khai', ex);
   if (ex.status !== 200) { renderKeyNote(op, `<div class="note bad">Registrar không dựng được DID Document: ${esc(ex.response?.error?.message || ex.error || ex.status)}</div>`); return; }
   const t = s.template = ex.response;
   f(op, 'didDocument').value = pretty(t.didDocument);
+  if (op === 'create') f(op, 'newDid').value = t.did;
   f(op, 'jobId').value = ''; f(op, 'secret').value = ''; s.jobId = undefined;   // DID Document mới = thao tác mới
-  renderKeyNote(op, `<div class="note info">${keyMsg ? keyMsg + '<br>' : ''}Registrar đã dựng DID Document: DID <code>${esc(t.did)}</code>, khóa mới <code>${esc(t.keyId.split('#')[1])}</code>${t.replacedKeys ? `, khóa bị thay <code>${esc(t.replacedKeys.map((k) => k.split('#')[1]).join(', '))}</code> (cũng phải ký)` : ''}.</div>`);
+  renderKeyNote(op, `<div class="note info">${keyMsg ? keyMsg + '<br>' : ''}Registrar đã dựng DID Document: DID <code>${esc(t.did)}</code>, khóa mới <code>${esc(t.keyId.split('#')[1])}</code>${t.replacedKeys ? `, khóa bị thay <code>${esc(t.replacedKeys.map((k) => k.split('#')[1]).join(', '))}</code> (cũng phải ký)` : ''}.${(t.didDocument.service ?? []).length ? ` Service giữ nguyên: <code>${esc(t.didDocument.service.map((x) => frag(x.id)).join(', '))}</code>.` : ''}</div>`);
+  out(op, 'validate').innerHTML = '';
+  updateExec(op);
+}
+
+/* ===================================================================== cập nhật: thay khóa hoặc sửa service */
+const umode = (op) => (op === 'update' ? $('[data-f="umode"]:checked', root(op))?.value ?? 'key' : 'key');
+const ledgerDoc = (op) => state[op].details?.ledger?.didDocument ?? null;
+const endpointList = (v) => [].concat(v ?? []).map((e) => String(e).trim()).filter(Boolean);
+/** Service ở dạng chuẩn để so sánh: id đầy đủ, serviceEndpoint luôn là mảng, sắp theo id */
+function normServices(doc) {
+  const did = doc?.id ?? '';
+  return (doc?.service ?? []).map((s) => {
+    const id = String(s.id ?? '').startsWith('#') ? did + s.id : String(s.id ?? '');
+    return { ...s, id, serviceEndpoint: endpointList(s.serviceEndpoint) };
+  }).sort((a, b) => a.id.localeCompare(b.id));
+}
+function serviceDiff(before, after) {
+  const b = new Map(normServices(before).map((s) => [s.id, s]));
+  const a = new Map(normServices(after).map((s) => [s.id, s]));
+  const same = (x, y) => x.type === y.type && JSON.stringify(x.serviceEndpoint) === JSON.stringify(y.serviceEndpoint);
+  return {
+    added: [...a.values()].filter((s) => !b.has(s.id)),
+    removed: [...b.values()].filter((s) => !a.has(s.id)),
+    changed: [...a.values()].filter((s) => b.has(s.id) && !same(s, b.get(s.id))).map((s) => ({ before: b.get(s.id), after: s })),
+  };
+}
+function svcChanged(op) {
+  let doc; try { doc = readJson(op, 'didDocument', null); } catch { return true; }
+  const d = serviceDiff(ledgerDoc(op), doc);
+  return !!(d.added.length || d.removed.length || d.changed.length);
+}
+
+/** Đổi chế độ hoặc tra cứu lại DID: đặt lại nhóm 3 theo chế độ đang chọn */
+function resetUpdateDoc(op) {
+  const s = state.update; const service = umode(op) === 'service';
+  $$('[data-out="umodes"] label', root(op)).forEach((l) => l.classList.toggle('on', $('input', l).checked));
+  out(op, 'keyrow').classList.toggle('hidden', service);
+  out(op, 'svcbox').classList.toggle('hidden', !service);
+  out(op, 'g3hint').textContent = service ? 'sửa service: giữ nguyên khóa, ký bằng khóa authentication hiện hành'
+    : 'thay khóa: bản mới chỉ chứa khóa mới, service giữ nguyên';
+  f(op, 'didDocument').placeholder = service ? 'Tra cứu DID rồi sửa bảng service ở trên; DID Document được dựng từ bản hiện hành trên mạng'
+    : 'Nhập khóa công khai rồi bấm “Dựng DID Document” để Registrar dựng DID Document từ khóa công khai';
+  s.template = null; f(op, 'didDocument').value = ''; renderKeyNote(op, ''); out(op, 'validate').innerHTML = '';
+  if (service) {
+    const doc = ledgerDoc(op);
+    s.svc = normServices(doc).map((x) => ({ orig: x, name: frag(x.id), type: x.type ?? '', endpoint: x.serviceEndpoint.join(', ') }));
+    renderSvcRows(op);
+    if (doc) composeServiceDoc(op);
+  }
+  lockForm(op); updateExec(op);
+}
+function renderSvcRows(op) {
+  const rows = state.update.svc ?? [];
+  out(op, 'svcrows').innerHTML = rows.length ? rows.map((r, i) => `<tr>
+      <td><input type="text" data-svc="${i}" data-k="name" value="${esc(r.name)}" placeholder="vd: website"></td>
+      <td><input type="text" data-svc="${i}" data-k="type" value="${esc(r.type)}" list="dl-svctypes" placeholder="vd: LinkedDomains"></td>
+      <td><input type="text" data-svc="${i}" data-k="endpoint" value="${esc(r.endpoint)}" placeholder="https://..."></td>
+      <td><button class="btn basic sm" data-act="svc-del" data-i="${i}">Gỡ</button></td></tr>`).join('')
+    : `<tr><td colspan="4" class="pdesc">${ledgerDoc(op) ? 'DID này chưa có service nào. Bấm “+ Thêm service”.' : 'Tra cứu DID trước.'}</td></tr>`;
+}
+/** DID Document mới = bản hiện hành trên mạng, chỉ thay mảng service theo bảng */
+function composeServiceDoc(op) {
+  const base = ledgerDoc(op); if (!base) return;
+  const did = base.id;
+  const doc = JSON.parse(JSON.stringify(base));
+  const services = (state.update.svc ?? []).filter((r) => r.name.trim() || r.type.trim() || r.endpoint.trim()).map((r) => ({
+    ...(r.orig ?? {}), id: `${did}#${r.name.trim()}`, type: r.type.trim(), serviceEndpoint: endpointList(r.endpoint.split(',')),
+  }));
+  if (services.length) doc.service = services; else delete doc.service;
+  f(op, 'didDocument').value = pretty(doc);
+  const d = serviceDiff(base, doc);
+  const auth = (base.authentication ?? []).map(frag).join(', ');
+  const ep = (x) => esc(x.serviceEndpoint.join(', '));
+  const lines = [
+    ...d.added.map((x) => `+ Thêm ${esc(frag(x.id))} (${esc(x.type)}): ${ep(x)}`),
+    ...d.changed.map(({ before, after }) => `~ Sửa ${esc(frag(after.id))}: ${before.type === after.type ? '' : esc(before.type) + ' → ' + esc(after.type) + '; '}${ep(before)} → ${ep(after)}`),
+    ...d.removed.map((x) => `- Gỡ ${esc(frag(x.id))} (${esc(x.type)}): ${ep(x)}`),
+  ];
+  renderKeyNote(op, `<div class="note info" style="margin:0 0 8px">Khóa giữ nguyên. Khóa sẽ phải ký: <code>${esc(auth)}</code> (authentication hiện hành).
+    ${lines.length ? `<ul class="chg">${lines.map((l) => `<li>${l}</li>`).join('')}</ul>` : '<div class="pdesc">Chưa có thay đổi nào so với bản trên mạng.</div>'}</div>`);
+  out(op, 'validate').innerHTML = '';
+  updateExec(op);
+}
+
+/* ===================================================================== tạo DID từ tệp DID Document tự soạn */
+const MAX_DOC_FILE = 64 * 1024;
+const PRIVATE_FIELDS = ['privateKeyJwk', 'privateKeyMultibase', 'privateKeyBase58', 'privateKeyHex', 'privateKeyPem', 'secretKey'];
+/** Tìm khóa bí mật ở bất kỳ đâu trong tệp: trường d của JWK OKP/EC/RSA, hoặc các trường privateKey* */
+function findPrivateKey(v, path = '') {
+  if (Array.isArray(v)) { for (let i = 0; i < v.length; i++) { const r = findPrivateKey(v[i], `${path}[${i}]`); if (r) return r; } return null; }
+  if (!v || typeof v !== 'object') return null;
+  if (typeof v.kty === 'string' && 'd' in v) return path + '.d';
+  for (const k of Object.keys(v)) {
+    if (PRIVATE_FIELDS.includes(k)) return path + '.' + k;
+    const r = findPrivateKey(v[k], path + '.' + k); if (r) return r;
+  }
+  return null;
+}
+async function loadDocFile(op, file) {
+  if (!file || op !== 'create' || phase(op) !== 'idle') return;
+  const s = state[op]; const bad = (m) => { renderKeyNote(op, `<div class="note bad">${m}</div>`); out(op, 'validate').innerHTML = ''; };
+  if (file.size > MAX_DOC_FILE) return bad(`Tệp <code>${esc(file.name)}</code> quá lớn (${file.size} byte, tối đa ${MAX_DOC_FILE / 1024} KB).`);
+  let doc;
+  try { doc = JSON.parse((await file.text()).replace(/^\uFEFF/, '')); }
+  catch (e) { return bad(`Tệp <code>${esc(file.name)}</code> không phải JSON hợp lệ: ${esc(e.message)}`); }
+  // Chấp nhận thêm dạng bọc ngoài: [ {...} ] hoặc { didDocument: {...} } (ví dụ kết quả resolve, mẫu của Registrar)
+  if (Array.isArray(doc) && doc.length === 1) doc = doc[0];
+  if (doc && typeof doc.didDocument === 'object' && !Array.isArray(doc.didDocument)) doc = doc.didDocument;
+  if (!doc || typeof doc !== 'object' || Array.isArray(doc)) return bad('Tệp phải chứa đúng một DID Document (một object JSON).');
+  const secretAt = findPrivateKey(doc);
+  if (secretAt) {
+    f(op, 'didDocument').value = ''; f(op, 'newDid').value = '';
+    return bad(`Tệp chứa khóa bí mật (<code>${esc(secretAt.replace(/^\./, ''))}</code>) nên giao diện không nạp. Khóa bí mật chỉ được nằm trong did-cli; hãy xóa nó khỏi tệp rồi tải lại.`);
+  }
+  let note = '';
+  if (!doc.id) {
+    const id = 'did:cheqd:testnet:' + crypto.randomUUID();
+    doc = { ...(doc['@context'] ? { '@context': doc['@context'] } : {}), id, ...doc };
+    note = `Tệp không có <code>id</code>: giao diện sinh DID mới <code>${esc(id)}</code>. `;
+  }
+  s.template = null; s.jobId = undefined;
+  f(op, 'didDocument').value = pretty(doc); f(op, 'newDid').value = String(doc.id);
+  f(op, 'jobId').value = ''; f(op, 'secret').value = '';
+  const vms = (doc.verificationMethod ?? []).map((v) => frag(v.id));
+  const auth = (doc.authentication ?? []).map(frag);
+  const svc = (doc.service ?? []).map((x) => `${frag(x.id)} (${x.type ?? '?'})`);
+  renderKeyNote(op, `<div class="note info">Đã nạp DID Document từ tệp <code>${esc(file.name)}</code> (${file.size} byte). ${note}
+    Khóa: <code>${esc(vms.join(', ') || '—')}</code>; khóa sẽ phải ký: <code>${esc(auth.join(', ') || '—')}</code>${svc.length ? `; service: <code>${esc(svc.join(', '))}</code>` : ''}.
+    Registrar sẽ chuẩn hóa (đổi <code>#key-1</code> thành DID URL đầy đủ) và kiểm tra lại ở lần gọi thứ nhất.</div>`);
+  validateDoc(op); updateExec(op);
+}
+
+/** Kiểm tra cục bộ DID và DID Document trước khi gửi (Registrar vẫn kiểm tra lại đầy đủ ở lần gọi thứ nhất) */
+function validateDoc(op) {
+  const errs = []; let doc;
+  try { doc = readJson(op, 'didDocument', null); } catch (e) { errs.push(e.message); }
+  const did = op === 'create' ? doc?.id : f(op, 'did').value.trim();
+  if (!errs.length && !doc) errs.push('Chưa có DID Document');
+  if (doc) {
+    if (!/^did:cheqd:testnet:[0-9a-f-]{36}$/i.test(did || '')) errs.push(`DID không đúng dạng did:cheqd:testnet:<uuid>: ${did ?? '(trống)'}`);
+    if (doc.id !== did) errs.push(`didDocument.id (${doc.id}) khác DID ${did}`);
+    const ctl = [].concat(doc.controller ?? did);
+    if (!ctl.includes(did)) errs.push('controller phải là chính DID');
+    const vms = doc.verificationMethod ?? [];
+    if (!vms.length) errs.push('Chưa có verificationMethod');
+    for (const vm of vms) {
+      if (vm.publicKeyJwk?.d) errs.push(`${frag(vm.id)}: có trường d (khóa bí mật). Không được gửi khóa bí mật`);
+      if (!KEY_TYPES.includes(vm.type)) errs.push(`${frag(vm.id)}: type phải là JsonWebKey2020 hoặc Ed25519VerificationKey2020`);
+      else if (vm.type === 'JsonWebKey2020' && !keyX(vm)) errs.push(`${frag(vm.id)}: publicKeyJwk phải là khóa Ed25519 (kty OKP, crv Ed25519, x 32 byte)`);
+      else if (vm.type === 'Ed25519VerificationKey2020' && !keyX(vm)) errs.push(`${frag(vm.id)}: publicKeyMultibase phải là khóa Ed25519: "z" + base58btc(0xed01 + 32 byte)`);
+    }
+    const ids = new Set(vms.map((v) => v.id));
+    const auth = (doc.authentication ?? []).map((a) => (typeof a === 'string' ? a : a.id));
+    if (!auth.length) errs.push('authentication là bắt buộc');
+    if (op === 'create' && vms.length > 1) errs.push(`Khi tạo DID, bộ ký did-cli chỉ ký DID Document có đúng một khóa (tệp có ${vms.length} khóa)`);
+    for (const k of ['keyAgreement', 'capabilityInvocation', 'capabilityDelegation']) {
+      if ((doc[k] ?? []).length) errs.push(`Ứng dụng chưa hỗ trợ trường ${k}`);
+    }
+    if (op === 'create' && (doc.alsoKnownAs ?? []).length) errs.push('Ứng dụng chưa hỗ trợ trường alsoKnownAs khi tạo DID');
+    for (const a of auth) if (!ids.has(a)) errs.push(`authentication trỏ tới khóa không có trong verificationMethod: ${frag(a)}`);
+    const seen = new Set();
+    for (const s of normServices(doc)) {
+      const name = s.id.startsWith(did + '#') ? s.id.slice(did.length + 1) : null;
+      if (name === null || !/^[A-Za-z0-9._~-]+$/.test(name)) errs.push(`service ${s.id || '(không tên)'}: tên chỉ gồm chữ, số và . _ ~ -`);
+      else if (seen.has(s.id) || ids.has(s.id) || ids.has('#' + name)) errs.push(`service ${name}: trùng tên`);
+      seen.add(s.id);
+      if (!String(s.type ?? '').trim()) errs.push(`service ${name ?? s.id}: thiếu type`);
+      if (!s.serviceEndpoint.length) errs.push(`service ${name ?? s.id}: thiếu service endpoint`);
+    }
+    if (op === 'update' && umode(op) === 'service') {
+      const keys = (d) => JSON.stringify((d?.verificationMethod ?? []).map((v) => [v.id, keyX(v)]).sort());
+      if (keys(doc) !== keys(ledgerDoc(op))) errs.push('Sửa service phải giữ nguyên khóa như bản trên mạng');
+      if (!svcChanged(op)) errs.push('Service chưa thay đổi so với bản trên mạng');
+    }
+  }
+  out(op, 'validate').innerHTML = errs.length
+    ? `<div class="note bad"><ul class="checks">${errs.map((e) => `<li class="bad">${esc(e)}</li>`).join('')}</ul></div>`
+    : '<span class="note ok" style="display:inline-block;margin:0">Hợp lệ (kiểm tra cục bộ). Registrar sẽ kiểm tra lại khi gửi.</span>';
+  return errs.length === 0;
+}
+
+/** Kiểm tra ô SECRET trước lần gọi thứ hai: đủ chữ ký, đúng kid của yêu cầu ký hiện tại, chữ ký 64 byte */
+function checkSecret(op, secret) {
+  const errs = [];
+  const reqs = state[op].last?.didState?.signingRequest || {};
+  const sr = secret?.signingResponse;
+  if (!sr || typeof sr !== 'object') errs.push('Thiếu secret.signingResponse');
+  else {
+    for (const [id, r] of Object.entries(reqs)) {
+      const a = sr[id];
+      if (!a) { errs.push(`Thiếu chữ ký cho ${id} (${frag(r.kid)})`); continue; }
+      if (a.kid && a.kid !== r.kid) errs.push(`${id}: kid ${a.kid} không phải khóa đang được yêu cầu ký (${r.kid}). Có thể đây là chữ ký của một thao tác khác`);
+      if (a.alg && a.alg !== 'EdDSA') errs.push(`${id}: alg phải là EdDSA`);
+      let len = 0; try { len = atob(String(a.signature ?? '').replace(/-/g, '+').replace(/_/g, '/')).length; } catch { len = -1; }
+      if (!a.signature) errs.push(`${id}: thiếu signature`);
+      else if (len !== 64) errs.push(`${id}: signature phải là base64 của 64 byte (Ed25519), nhận được ${len < 0 ? 'chuỗi không phải base64' : len + ' byte'}`);
+    }
+  }
+  out(op, 'secretCheck').innerHTML = errs.length
+    ? `<div class="note bad"><b>Chưa gửi:</b><ul class="checks">${errs.map((e) => `<li class="bad">${esc(e)}</li>`).join('')}</ul></div>`
+    : '<div class="note ok">Đủ chữ ký cho mọi signingRequest, đúng kid. Bấm nút gửi để Registrar kiểm tra chữ ký và gửi lên mạng.</div>';
+  return errs.length === 0;
 }
 
 /* ===================================================================== hai lần gọi */
 function firstBody(op) {
-  const options = readJson(op, 'options', {}); const secret = readJson(op, 'secret', {});
-  if (op === 'create') return { options, secret, didDocument: readJson(op, 'didDocument', null) };
-  if (op === 'update') return { did: f(op, 'did').value, options, secret, didDocumentOperation: ['setDidDocument'], didDocument: [readJson(op, 'didDocument', null)] };
-  return { did: f(op, 'did').value, options, secret };
+  const options = readJson(op, 'options', {});
+  if (op === 'create') return { options, secret: {}, didDocument: readJson(op, 'didDocument', null) };
+  if (op === 'update') return { did: f(op, 'did').value.trim(), options, secret: {}, didDocumentOperation: ['setDidDocument'], didDocument: [readJson(op, 'didDocument', null)] };
+  return { did: f(op, 'did').value.trim(), options, secret: {} };
 }
-/** Body gửi đi khi bấm nút thực thi: có Job ID thì là lần gọi tiếp theo (jobId + secret), không thì là lần gọi thứ nhất */
-function bodyFromForm(op) {
+/** Ô SECRET nhận chỉ phần secret ({signingResponse}) hoặc nguyên kết quả did-cli sign ({jobId, secret}) */
+function secretFromForm(op) {
   let secret = readJson(op, 'secret', {});
-  let jobId = f(op, 'jobId').value.trim();
-  if (secret && secret.jobId && secret.secret) { jobId = secret.jobId; secret = secret.secret; }   // dán nguyên kết quả của did-cli sign
-  if (jobId) return { jobId, secret };
-  return firstBody(op);
+  if (secret && secret.jobId && secret.secret) {
+    if (secret.jobId !== state[op].jobId) throw new Error(`Kết quả ký thuộc job ${secret.jobId}, không phải job đang dở ${state[op].jobId}`);
+    secret = secret.secret;
+  }
+  return secret;
 }
 
 async function execute(op) {
-  const btn = $('[data-act="exec"]', root(op));
-  let body;
+  const s = state[op]; const p = phase(op);
+  let body; let title;
   try {
-    if (!f(op, 'jobId').value.trim()) {
-      if (op !== 'create' && !f(op, 'did').value) throw new Error('Chưa chọn DID');
-      if (op !== 'deactivate' && !f(op, 'didDocument').value.trim()) throw new Error('Chưa có DID Document. Hãy lấy khóa công khai từ bộ ký trước');
+    if (p === 'action') {
+      const secret = secretFromForm(op);
+      if (!checkSecret(op, secret)) return;
+      body = { jobId: s.jobId, secret }; title = 'Lần gọi thứ hai: jobId + secret.signingResponse';
+    } else {
+      if (op !== 'deactivate' && !validateDoc(op)) throw new Error('DID Document chưa hợp lệ, xem chi tiết ở nhóm 3');
+      body = firstBody(op); title = 'Lần gọi thứ nhất: gửi yêu cầu, nhận jobId và yêu cầu ký';
     }
-    body = bodyFromForm(op);
   } catch (e) { errorOnly(op, esc(e.message) + '.'); return; }
-  btn.disabled = true;
+  await send(op, body, title);
+}
+async function send(op, body, title) {
+  const s = state[op];
+  s.busy = true; updateExec(op);
   try {
-    const first = !body.jobId;
     const ex = await http('POST', ENDPOINT[op], body);
-    logExchange(op, first ? 'Lần gọi thứ nhất' : 'Gửi jobId kèm secret', ex);
+    logExchange(op, title, ex);
     if (!ex.response?.didState) { errorOnly(op, `Registrar trả lỗi ${ex.status || ''}: ${esc(ex.error || JSON.stringify(ex.response))}`); return; }
+    if (!body.jobId) { f(op, 'secret').value = ''; f(op, 'secret').classList.remove('filled'); out(op, 'secretCheck').innerHTML = ''; }
     showResponse(op, ex.response); showTab(op, 'result');
     await followUp(op, ex);
-  } finally { btn.disabled = op === 'deactivate' && !f(op, 'confirm').checked; }
+  } finally { s.busy = false; updateExec(op); }
 }
 
-/** Xử lý sau mỗi phản hồi: action -> bộ ký (nếu bật tự động); wait -> gọi lại; finished -> lưu người sở hữu, đối chiếu kho khóa */
+/** Sau mỗi phản hồi: action -> chờ người dùng ký bằng did-cli và dán chữ ký; wait -> gọi lại; finished -> lưu người sở hữu */
 async function followUp(op, ex) {
   const st = ex.response?.didState;
-  if (st?.state === 'action' && mode() === 'agent' && f(op, 'autosign').checked) return signWithAgent(op);
   if (st?.state === 'wait') return poll(op);
   if (st?.state === 'finished') return afterFinished(op, ex.response);
-}
-
-async function signWithAgent(op) {
-  const s = state[op]; const resp = s.last;
-  if (resp?.didState?.state !== 'action') return;
-  if (!agent.ok && !(await connectAgent())) { addNote(op, '<div class="note bad">Chưa kết nối bộ ký.</div>'); return; }
-  pane(op, 'signer').innerHTML = '<div class="note info">Đã chuyển yêu cầu ký cho bộ ký. Hãy xem và xác nhận trên cửa sổ của did-cli agent…</div>';
-  addNote(op, '<div class="note info" data-wait>Đang chờ bộ ký đối chiếu và xác nhận…</div>');
-  const sx = await agent.call('POST', '/sign', { response: resp, keyRef: s.keyRef, label: op === 'create' ? f(op, 'label').value.trim() || undefined : undefined });
-  s.notes = (s.notes || []).filter((n) => !n.includes('data-wait')); renderResult(op);
-  const r = sx.response || {};
-  const head = r.summary?.length ? `<div class="kv" style="margin-bottom:8px"><div>THAO TÁC</div><div>${r.summary.map(esc).join('<br>')}</div></div>` : '';
-  pane(op, 'signer').innerHTML = head + `<ul class="checks">${(r.checks || []).map((c) => `<li class="${c.errors.length ? 'bad' : 'ok'}">${esc(c.title)}${c.errors.map((e) => `<div class="e">${esc(e)}</div>`).join('')}</li>`).join('')}</ul>`;
-  if (sx.status !== 200 || !r.ok) {
-    const why = r.reason === 'USER_REJECTED' ? 'Người dùng từ chối ký trên bộ ký.'
-      : r.reason === 'CHECK_FAILED' ? 'Bộ ký từ chối ký vì đối chiếu không đạt. Không có chữ ký nào được gửi đi.'
-      : `Không gọi được bộ ký: ${esc(sx.error || r.error?.message || sx.status)}`;
-    pane(op, 'signer').insertAdjacentHTML('beforeend', `<div class="note bad">${why}</div>`);
-    const failed = (r.checks || []).filter((c) => c.errors.length);
-    addNote(op, `<div class="note bad">${why}${failed.length ? `<ul class="checks" style="margin-top:6px">${failed.map((c) => `<li class="bad">${esc(c.title)}${c.errors.map((e) => `<div class="e">${esc(e)}</div>`).join('')}</li>`).join('')}</ul>` : ''}
-      <div class="pdesc">Toàn bộ kết quả đối chiếu ở tab Bộ ký.</div></div>`);
-    showTab(op, 'result');
-    return;
-  }
-  pane(op, 'signer').insertAdjacentHTML('beforeend', '<div class="note ok">Bộ ký đã ký. Trang này chỉ nhận chữ ký, không nhận khóa bí mật.</div>');
-  f(op, 'secret').value = pretty(r.body.secret); f(op, 'jobId').value = r.body.jobId;
-  const ex = await http('POST', ENDPOINT[op], r.body);
-  logExchange(op, 'Lần gọi thứ hai: jobId + secret.signingResponse', ex);
-  if (!ex.response?.didState) { errorOnly(op, `Registrar trả lỗi ${ex.status || ''}: ${esc(ex.error || JSON.stringify(ex.response))}`); return; }
-  showResponse(op, ex.response); showTab(op, 'result');
-  await followUp(op, ex);
 }
 
 async function poll(op) {
@@ -530,45 +907,51 @@ async function checkState(op) {
   state[op].jobId = jobId;
   const ex = await http('POST', ENDPOINT[op], { jobId });
   logExchange(op, 'Check State (gửi lại jobId)', ex);
-  if (!ex.response?.didState) { errorOnly(op, `Registrar trả lỗi ${ex.status || ''}: ${esc(ex.error || JSON.stringify(ex.response))}`); return; }
+  if (!ex.response?.didState) { state[op].jobId = undefined; errorOnly(op, `Registrar trả lỗi ${ex.status || ''}: ${esc(ex.error || JSON.stringify(ex.response))}`); return; }
   showResponse(op, ex.response); showTab(op, 'result');
 }
 
 async function afterFinished(op, resp) {
   const s = state[op]; const did = resp.didState.did;
+  f(op, 'secret').classList.remove('filled'); out(op, 'secretCheck').innerHTML = '';
   if (op === 'create') {
     const owner = { fullName: f(op, 'fullName').value.trim(), organization: f(op, 'organization').value.trim(), email: f(op, 'email').value.trim() };
     if (owner.fullName || owner.organization || owner.email) {
-      const ox = await http('PUT', `/api/v1/did-operations/${encodeURIComponent(s.jobId)}/owner`, owner);
-      logExchange(op, 'Lưu thông tin người sở hữu', ox);
-      addNote(op, ox.status === 200 ? '<div class="note ok">Đã lưu thông tin người sở hữu tại ứng dụng (không ghi lên mạng).</div>'
-        : `<div class="note warn">Không lưu được thông tin người sở hữu: ${esc(ox.response?.error?.message || ox.error || ox.status)}</div>`);
+      const ox = await http('PUT', `/api/v1/did-operations/${encodeURIComponent(s.lastJobId)}/owner`, owner);
+      logExchange(op, 'Lưu thông tin chủ thể', ox);
+      addNote(op, ox.status === 200 ? '<div class="note ok">Đã lưu thông tin chủ thể tại ứng dụng (không ghi lên mạng).</div>'
+        : `<div class="note warn">Không lưu được thông tin chủ thể: ${esc(ox.response?.error?.message || ox.error || ox.status)}</div>`);
     }
   }
-  if (mode() === 'agent' && agent.ok) {
-    const y = await agent.call('POST', '/sync', { did });
-    if (y.status === 200) addNote(op, `<div class="note info">Bộ ký đã đối chiếu kho khóa với mạng: ${esc((y.response?.changes || []).join('; ') || 'không đổi')}.</div>`);
-    else addNote(op, `<div class="note warn"><b>Bộ ký chưa cập nhật được trạng thái khóa.</b> ${esc(y.response?.error?.message || y.error || ('HTTP ' + y.status))}
-      <br>Thao tác trên mạng đã hoàn tất. Hãy kiểm tra biến DID_API_URL của agent (agent phải gọi được Registrar), rồi chạy <code>did-cli sync ${esc(did)}</code>.</div>`);
-  }
-  s.template = null; s.keyRef = undefined;
+  // Bộ ký chạy tách khỏi trang này nên trang không tự cập nhật kho khóa; người dùng chạy did-cli sync để khóa PENDING thành ACTIVE / REPLACED
+  addNote(op, `<div class="note info">Chạy <code>did-cli sync ${esc(did)}</code> để bộ ký đối chiếu kho khóa với DID Document mới trên mạng.</div>`);
+  s.template = null;
+  f(op, 'commit').checked = false;
+  f(op, 'secret').value = '';   // chữ ký chỉ dùng được cho đúng một thao tác
+  if (out(op, 'validate')) out(op, 'validate').innerHTML = '';
+  if (op === 'update') { f(op, 'didDocument').value = ''; renderKeyNote(op, ''); }
   await loadDids();
+  if (op !== 'create') await lookupDid(op);   // hiện ngày cập nhật / vô hiệu hóa và lịch sử mới
+  updateExec(op);
 }
 
 function clearOp(op) {
-  const s = state[op]; Object.assign(s, { keyRef: undefined, template: null, jobId: undefined, last: null, notes: [], log: [] });
+  const s = state[op]; Object.assign(s, { template: null, jobId: undefined, lastJobId: undefined, last: null, notes: [], log: [], details: null });
+  renderOngoing(op); lockForm(op);
   $$('input[type=text], input[type=email]', root(op)).forEach((i) => { i.value = ''; });
   if (f(op, 'didDocument')) f(op, 'didDocument').value = '';
-  f(op, 'secret').value = '';
+  if (f(op, 'currentDoc')) f(op, 'currentDoc').value = '';
+  f(op, 'secret').value = ''; f(op, 'secret').classList.remove('filled');
+  f(op, 'commit').checked = false;
   f(op, 'options').value = ''; setOptions(op);
   renderKeyNote(op, '');
-  $('[data-out="logcnt"]', root(op)).textContent = '0';
+  for (const k of ['secretCheck', 'validate', 'details']) { const el = out(op, k); if (el) el.innerHTML = ''; }
+  if (out(op, 'owner')) out(op, 'owner').innerHTML = 'Chưa tra cứu DID.';
+  out(op, 'logcnt').textContent = '0';
   for (const p of ['result', 'didState', 'regMeta', 'docMeta']) pane(op, p).innerHTML = '<div class="pdesc">Chưa có kết quả.</div>';
-  pane(op, 'signer').innerHTML = '<div class="pdesc">Chưa có yêu cầu ký nào được chuyển cho bộ ký.</div>';
   pane(op, 'log').innerHTML = '<div class="pdesc">Chưa có lần gọi nào.</div>';
-  $('[data-act="sign"]', root(op)).classList.add('hidden');
-  if (op === 'deactivate') { f(op, 'confirm').checked = false; $('[data-act="exec"]', root(op)).disabled = true; showCurrent(op); }
-  showTab(op, 'result');
+  if (op === 'update') resetUpdateDoc(op);
+  updateExec(op); showTab(op, 'result');
 }
 
 /* ===================================================================== danh sách DID */
@@ -576,22 +959,18 @@ let didList = [];
 async function loadDids() {
   const ex = await http('GET', '/api/v1/dids');
   didList = Array.isArray(ex.response) ? ex.response : [];
-  const active = didList.filter((d) => d.status === 'ACTIVE');
-  for (const sel of $$('.did-select')) {
-    const cur = sel.value || new URLSearchParams(location.search).get('did');
-    sel.innerHTML = active.length ? active.map((d) => `<option value="${esc(d.did)}">${esc(d.label ? d.label + ' · ' : '')}${esc(d.did)}</option>`).join('')
-      : '<option value="">(chưa có DID ACTIVE)</option>';
-    if (active.some((d) => d.did === cur)) sel.value = cur;
-  }
-  for (const op of ['update', 'deactivate']) showOwner(op);
-  showCurrent('deactivate');
-  $('[data-out="didlist"]').innerHTML = didList.length ? `<table class="list"><tr><th>DID</th><th>Nhãn</th><th>Người sở hữu</th><th>Tổ chức</th><th>Email</th><th>Trạng thái</th><th></th></tr>${didList.map((d) =>
+  fillDidList();
+  $('[data-out="didlist"]').innerHTML = didList.length ? `<table class="list"><tr><th>DID</th><th>Nhãn</th><th>Người sở hữu</th><th>Tổ chức</th><th>Email</th><th>Ngày tạo</th><th>Cập nhật</th><th>Trạng thái</th><th></th></tr>${didList.map((d) =>
     `<tr><td class="m">${esc(d.did)}</td><td>${esc(d.label || '—')}</td><td>${esc(d.owner?.fullName || '—')}</td><td>${esc(d.owner?.organization || '—')}</td><td>${esc(d.owner?.email || '—')}</td>
+      <td>${esc(fmtTime(d.createdAt))}</td><td>${esc(fmtTime(d.updatedAt))}</td>
       <td><span class="badge ${esc(d.status)}">${esc(d.status)}</span></td>
-      <td><button class="btn basic sm" data-act="view" data-did="${esc(d.did)}">Xem trên mạng</button>${d.status === 'ACTIVE' ? ` <a href="/ui/update?did=${encodeURIComponent(d.did)}" data-nav="update">Thay khóa</a> · <a href="/ui/deactivate?did=${encodeURIComponent(d.did)}" data-nav="deactivate">Vô hiệu hóa</a>` : ''}</td></tr>`).join('')}</table>`
+      <td><button class="btn basic sm" data-act="view" data-did="${esc(d.did)}">Xem trên mạng</button>${d.status === 'ACTIVE' ? ` <a href="/ui/update?did=${encodeURIComponent(d.did)}" data-nav="update">Cập nhật</a> · <a href="/ui/deactivate?did=${encodeURIComponent(d.did)}" data-nav="deactivate">Vô hiệu hóa</a>` : ''}</td></tr>`).join('')}</table>`
     : '<div class="pdesc">Chưa có DID nào.</div>';
-  // đọc lại DID đang xem để phần chi tiết không giữ dữ liệu cũ sau một thao tác mới
   if (viewedDid) viewDid(viewedDid, false);
+}
+/** Gợi ý DID cho ô nhập: các DID do ứng dụng tạo */
+function fillDidList() {
+  $('#dl-dids').innerHTML = didList.map((d) => `<option value="${esc(d.did)}">${esc(`${d.label ? d.label + ' · ' : ''}${d.status}`)}</option>`).join('');
 }
 var viewedDid = null;
 async function viewDid(did, scroll = true) {
@@ -607,34 +986,16 @@ async function viewDid(did, scroll = true) {
     box.innerHTML = head + `<div class="note bad">Không đọc được DID Document: ${esc(r?.error?.message || ex.error || ex.status)}</div>`;
     return;
   }
-  const frag = (k) => (typeof k === 'string' ? k : k.id).split('#')[1];
   box.innerHTML = head + `<div class="kv" style="margin-bottom:10px">
       <div>DID</div><div class="m">${esc(doc.id)}</div>
-      <div>KHÓA</div><div class="m">${esc((doc.verificationMethod ?? []).map(frag).join(', ') || '—')}</div>
+      <div>KHÓA</div><div class="m">${esc((doc.verificationMethod ?? []).map(keyLabel).join(', ') || '—')}</div>
       <div>AUTHENTICATION</div><div class="m">${esc((doc.authentication ?? []).map(frag).join(', ') || '—')}</div>
       <div>VÔ HIỆU HÓA</div><div class="m">${md.deactivated ? 'có' : 'không'}</div>
       <div>VERSIONID</div><div class="m">${esc(md.versionId ?? '—')}</div>
       <div>PREVIOUSVERSIONID</div><div class="m">${esc(md.previousVersionId ?? '—')}</div>
-      <div>TẠO / CẬP NHẬT</div><div class="m">${esc(md.created ?? '—')} / ${esc(md.updated ?? '—')}</div>
+      <div>TẠO / CẬP NHẬT</div><div class="m">${esc(fmtTime(md.created))} / ${esc(fmtTime(md.updated))}</div>
     </div><pre class="code full">${hl(r)}</pre>`;
   if (scroll) box.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
-function showOwner(op) {
-  const did = f(op, 'did').value; const d = didList.find((x) => x.did === did); const o = d?.owner;
-  $('[data-out="owner"]', root(op)).innerHTML = d ? `Nhãn: ${esc(d.label || '—')}${o ? ` · ${esc(o.fullName || '—')}${o.organization ? ' (' + esc(o.organization) + ')' : ''}${o.email ? ' · ' + esc(o.email) : ''}` : ' · chưa có thông tin người sở hữu'}` : '—';
-}
-async function showCurrent(op) {
-  if (op !== 'deactivate') return;
-  const did = f(op, 'did').value; const area = f(op, 'currentDoc');
-  if (!did) { area.value = ''; renderKeyNote(op, ''); return; }
-  area.value = 'Đang đọc DID Document từ mạng…';
-  const ex = await http('GET', '/api/v1/dids/' + encodeURIComponent(did));
-  if (f(op, 'did').value !== did) return;
-  const doc = ex.response?.didDocument;
-  if (ex.status !== 200 || !doc) { area.value = ''; renderKeyNote(op, `<div class="note bad">Không đọc được DID Document: ${esc(ex.response?.error?.message || ex.error || ex.status)}</div>`); return; }
-  area.value = pretty(doc);
-  const auth = (doc.authentication ?? []).map((a) => (typeof a === 'string' ? a : a.id));
-  renderKeyNote(op, `<div class="note info" style="margin:0 0 8px">Khóa sẽ phải ký: <code>${esc(auth.map((k) => k.split('#')[1]).join(', '))}</code></div>`);
 }
 function rememberJob(jobId) {
   if (!jobId) return;
@@ -653,8 +1014,8 @@ function route() {
   $$('#optabs a').forEach((a) => a.classList.toggle('active', a.dataset.op === op));
   $$('#panels > .op').forEach((p) => p.classList.toggle('hidden', p.dataset.op !== op));
   const did = new URLSearchParams(location.search).get('did');
-  if (did && (op === 'update' || op === 'deactivate') && [...f(op, 'did').options].some((o) => o.value === did)) {
-    f(op, 'did').value = did; showOwner(op); showCurrent(op);
+  if (did && (op === 'update' || op === 'deactivate') && phase(op) === 'idle' && f(op, 'did').value !== did) {
+    f(op, 'did').value = did; lookupDid(op);
   }
   document.title = 'DID Registrar · ' + (op === 'dids' ? 'Danh sách DID' : TITLE[op]);
 }
@@ -665,45 +1026,65 @@ document.addEventListener('click', async (e) => {
   const nav = e.target.closest('#optabs a, a[data-nav]');
   if (nav) { e.preventDefault(); navigate(nav.getAttribute('href')); return; }
   const t = e.target.closest('button'); if (!t) return;
-  if (t.id === 'btn-connect') return connectAgent();
   const block = t.closest('.op'); if (!block) return;
   const op = block.dataset.op;
   if (t.dataset.tab) return showTab(op, t.dataset.tab);
   if (t.dataset.act === 'refresh') return loadDids();
   if (t.dataset.act === 'view') return viewDid(t.dataset.did);
   if (op === 'dids') return;
-  if (t.dataset.act === 'key') return getKey(op);
+  if (t.dataset.act === 'lookup') return lookupDid(op);
   if (t.dataset.act === 'template') return buildTemplate(op, f(op, 'publicKey').value, '');
+  if (t.dataset.act === 'validate') return validateDoc(op);
+  if (t.dataset.act === 'svc-add') { (state.update.svc = state.update.svc ?? []).push({ name: '', type: '', endpoint: '' }); renderSvcRows(op); composeServiceDoc(op); return; }
+  if (t.dataset.act === 'svc-del') { state.update.svc.splice(Number(t.dataset.i), 1); renderSvcRows(op); composeServiceDoc(op); return; }
+  if (t.dataset.act === 'svc-reset') return resetUpdateDoc(op);
   if (t.dataset.act === 'exec') return execute(op);
-  if (t.dataset.act === 'sign') return signWithAgent(op);
+  if (t.dataset.act === 'quit') return quitJob(op);
   if (t.dataset.act === 'check') return checkState(op);
   if (t.dataset.act === 'clear') return clearOp(op);
-  if (t.dataset.act === 'current') return showCurrent(op);
   if (t.dataset.act === 'copy') { navigator.clipboard?.writeText(pretty(state[op].last)); t.textContent = 'Đã chép'; }
 });
 document.addEventListener('input', (e) => {
-  const block = e.target.closest('.op'); if (!block) return;
+  const block = e.target.closest('.op'); if (!block || block.dataset.op === 'dids') return;
   const op = block.dataset.op; const name = e.target.dataset.f;
   if (name === 'label') setOptions(op);
-  if (name === 'confirm') $('[data-act="exec"]', block).disabled = !e.target.checked;
-  if (name === 'did') { state[op].template = null; f(op, 'jobId').value = ''; f(op, 'secret').value = ''; if (f(op, 'didDocument')) f(op, 'didDocument').value = ''; renderKeyNote(op, ''); showOwner(op); showCurrent(op); }
+  if (name === 'umode') resetUpdateDoc(op);
+  if (e.target.dataset.svc !== undefined) {
+    state.update.svc[Number(e.target.dataset.svc)][e.target.dataset.k] = e.target.value;
+    composeServiceDoc(op); return;
+  }
+  if (name === 'keymode') applyKeyMode(op);
+  if (name === 'secret') { e.target.classList.remove('filled'); out(op, 'secretCheck').innerHTML = ''; renderOngoing(op); }
+  if (name === 'did') { state[op].details = null; out(op, 'details').innerHTML = ''; }
+  if (name === 'didDocument' && op === 'create') { try { const id = JSON.parse(e.target.value).id; f(op, 'newDid').value = typeof id === 'string' ? id : ''; } catch { /* đang gõ dở */ } }
+  if (['commit', 'didDocument', 'secret', 'did'].includes(name)) updateExec(op);
 });
-document.addEventListener('change', (e) => { if (e.target.id === 'sign-mode') { applyMode(); for (const op of OPS) if (state[op].last) showResponse(op, state[op].last); } });
+document.addEventListener('change', (e) => {
+  const block = e.target.closest('.op'); if (!block) return;
+  if (e.target.dataset.f === 'docfile') { const file = e.target.files?.[0]; e.target.value = ''; loadDocFile(block.dataset.op, file); return; }
+  if (e.target.dataset.f === 'did' && e.target.value.trim()) lookupDid(block.dataset.op);   // chọn trong danh sách gợi ý
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && e.target.dataset?.f === 'did') { e.preventDefault(); lookupDid(e.target.closest('.op').dataset.op); }
+});
+for (const ev of ['dragenter', 'dragover', 'dragleave', 'drop']) {
+  document.addEventListener(ev, (e) => {
+    const zone = e.target.closest?.('[data-out="upload"]'); if (!zone) return;
+    e.preventDefault();
+    const busy = phase('create') !== 'idle';
+    zone.classList.toggle('drag', !busy && (ev === 'dragenter' || ev === 'dragover'));
+    if (ev === 'drop' && !busy) loadDocFile('create', e.dataTransfer?.files?.[0]);
+  });
+}
 window.addEventListener('popstate', route);
 
 /* ===================================================================== khởi động */
 $('#panels').innerHTML = OPS.map(panelHtml).join('') + didsPanelHtml();
-for (const op of OPS) setOptions(op);
-if (store.get('ui.agentUrl')) $('#agent-url').value = store.get('ui.agentUrl');
-if (store.get('ui.agentToken')) $('#agent-token').value = store.get('ui.agentToken');
-if (store.get('ui.mode')) $('#sign-mode').value = store.get('ui.mode');
-const hashToken = new URLSearchParams(location.hash.slice(1)).get('token');
-if (hashToken) { $('#agent-token').value = hashToken; history.replaceState(null, '', location.pathname + location.search); }
-applyMode();
+for (const op of OPS) applyKeyMode(op);
+resetUpdateDoc('update');
 route();
-loadDids().then(route);
+loadDids();
 rememberJob(null);
-if (mode() === 'agent' && $('#agent-token').value) connectAgent();
 </script>
 </body>
 </html>
